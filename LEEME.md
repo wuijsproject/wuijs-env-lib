@@ -1,5 +1,5 @@
 > [!NOTE]
-> For the Spanish version of this document, see [LEEME.md](./LEEME.md).
+> For the English version of this document, see [README.md](./README.md).
 
 > [!WARNING]
 > Este documento aún no ha sido terminado y esta en una versión preliminar.
@@ -435,3 +435,9 @@ Esto asegurará que los ejemplos de inicialización funcionen correctamente.
 | `openURL`               | `void`                    | `openURL(url)`<br><br>Argumentos:<br>**• url:** `string`, la URL de destino o ruta de asset local.<br><br>Abre un recurso local en el WebView o un enlace externo. |
 | `readDeepLink`          | `Promise<string>`         | `readDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Lee la última URL de Deep Link recibida. |
 | `clearDeepLink`         | `void`                    | `clearDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Limpia la URL de Deep Link almacenada. |
+
+## Autor
+
+**Sergio E. Belmar V.**
+- GitHub: [https://github.com/sbelmar](https://github.com/sbelmar)
+- LinkedIn: [https://www.linkedin.com/in/sbelmarv/](https://www.linkedin.com/in/sbelmarv/)
