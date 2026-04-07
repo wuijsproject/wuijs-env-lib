@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>WUIEnvironment - Test Page</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+		<script type="text/javascript" src="../wuienv-web-0.1.js"></script>
+	</head>
+	<body>
+		<style>
+			body {
+				display: flex;
+				padding: 5px 5px 10px 5px;
+				flex-direction: column;
+				justify-content: center;
+			}
+			hr {
+				width: 100%;
+				height: 1px;
+				border: 0;
+				background-color: #ccc;
+			}
+			pre {
+				display: block;
+				max-width: 100%;
+				overflow: auto;
+				margin-bottom: 1.6em;
+				border: 1px solid #ddd;
+				background: #f4f4f4;
+				padding: 1em 1.5em;
+				page-break-inside: avoid;
+				word-wrap: break-word;
+				line-height: 1.6;
+				font-family: monospace;
+				font-size: 15px;
+				color: #666;
+			}
+			button {
+				width: 100%;
+				max-width: 400px;
+				margin-bottom: 10px;
+				border: 1px solid #53abff;
+				background-color: dodgerblue;
+				padding: 10px;
+				color: white;
+			}
+		</style>
+		<h2>WUIEnvironment - Test Page</h2>
+		<script>
+			const env = new WUIEnvironment();
+			const format = (content) => {
+				try {
+					return JSON.parse(content);
+				} catch (e) {
+					return content;
+				}
+			}
+			const stringify = (json) => {
+				return JSON.stringify(json).replace(/\{/, "{\n").replace(/\,/g, ",\n").replace(/}$/, "\n}");
+			}
+			const print = (id, content) => {
+				document.getElementById(id).innerHTML = typeof(format(content)) == "object" ? stringify(format(content)) : content;
+			}
+		</script>
+		<h3>.isAppInForeground()</h3>
+		<div>async return:</div>
+		<pre id="isAppInForeground_async">...</pre>
+		<h3>.getDeviceInfo()</h3>
+		<div>async return:</div>
+		<pre id="getDeviceInfo_async">...</pre>
+		<div>sync return:</div>
+		<pre id="getDeviceInfo_sync">...</pre>
+		<h3>.getDisplayInfo()</h3>
+		<div>async return:</div>
+		<pre id="getDisplayInfo_async">...</pre>
+		<div>sync return:</div>
+		<pre id="getDisplayInfo_sync">...</pre>
+		<h3>.getAppInfo()</h3>
+		<div>async return:</div>
+		<pre id="getAppInfo_async">...</pre>
+		<div>sync return:</div>
+		<pre id="getAppInfo_sync">...</pre>
+		<h3>.getPermissionsStatus()</h3>
+		<div>async return:</div>
+		<pre id="getPermissionsStatus_async">...</pre>
+		<div>sync return:</div>
+		<pre id="getPermissionsStatus_sync">...</pre>
+		<h3>.getCurrentPosition()</h3>
+		<div>async return:</div>
+		<pre id="getCurrentPosition_async">...</pre>
+		<div>sync return:</div>
+		<pre id="getCurrentPosition_sync">...</pre>
+		<h3>.getConnectionStatus()</h3>
+		<div>async return:</div>
+		<pre id="getConnectionStatus_async">...</pre>
+		<div>sync return:</div>
+		<pre id="getConnectionStatus_sync">...</pre>
+		<script>
+			env.isAppInForeground((status) => {print("isAppInForeground_async", status);});
+			env.getDeviceInfo((json) => {print("getDeviceInfo_async", json);});
+			env.getDisplayInfo((json) => {print("getDisplayInfo_async", json);});
+			env.getAppInfo((json) => {print("getAppInfo_async", json);});
+			env.getPermissionsStatus((json) => {print("getPermissionsStatus_async", json);});
+			env.getCurrentPosition((json) => {print("getCurrentPosition_async", json);});
+			env.getConnectionStatus((status) => {print("getConnectionStatus_async", status);});
+			(async () => {
+				print("getDeviceInfo_sync", await env.getDeviceInfo());
+				print("getDisplayInfo_sync", await env.getDisplayInfo());
+				print("getAppInfo_sync", await env.getAppInfo());
+			})();
+			setInterval(() => {
+				(async () => {
+					print("getPermissionsStatus_sync", await env.getPermissionsStatus());
+					print("getCurrentPosition_sync", await env.getCurrentPosition());
+					print("getConnectionStatus_sync", await env.getConnectionStatus());
+				})();
+			}, 1000);
+		</script>
+		<hr>
+		<h3>.saveFile()</h3>
+		<div>sync txt return:</div>
+		<pre id="saveFile_sync_txt">...</pre>
+		<div>sync json return:</div>
+		<pre id="saveFile_sync_json">...</pre>
+		<h3>.readFile()</h3>
+		<div>sync txt return:</div>
+		<pre id="readFile_sync_txt">...</pre>
+		<div>sync json return:</div>
+		<pre id="readFile_sync_json">...</pre>
+		<h3>.removeFile()</h3>
+		<div>sync txt return:</div>
+		<pre id="removeFile_sync_txt">...</pre>
+		<div>sync json return:</div>
+		<pre id="removeFile_sync_json">...</pre>
+		<script>
+			(async () => {
+				const txtName = "test.txt";
+				const txtContent = "TEST";
+				const jsonName = "test.json";
+				const jsonContent = {key: "TEST"};
+				print("saveFile_sync_txt", await env.saveFile(txtName, txtContent));
+				print("readFile_sync_txt", await env.readFile(txtName));
+				print("removeFile_sync_txt", await env.removeFile(txtName));
+				print("saveFile_sync_json", await env.saveFile(jsonName, jsonContent));
+				print("readFile_sync_json", (await env.readFile(jsonName)).key);
+				print("removeFile_sync_json", await env.removeFile(jsonName));
+			})();
+		</script>
+		<hr>
+		<h3>.onDownloadFile()</h3>
+		<button onclick="window.open('./test.pdf');">download pdf test file</button>
+		<div>sync json return:</div>
+		<pre id="downloadFile_sync_json">...</pre>
+		<script>
+			env.onDownloadFile = (json) => {
+				print("downloadFile_sync_json", json);
+			}
+		</script>
+		<hr>
+		<h3>.setStatusbarStyle()</h3>
+		<button onclick="env.setStatusbarStyle('#ff0000', false);">change style: red color</button>
+		<button onclick="env.setStatusbarStyle('#1e90ff', false);">change style: dodger blue color</button>
+		<button onclick="env.setStatusbarStyle('statusbarLightColor', true);">change style: statusbar light mode (Android)</button>
+		<button onclick="env.setStatusbarStyle('statusbarLightOverlayColor', true);">change style: statusbar light overlay mode (Android)</button>
+		<button onclick="env.setStatusbarStyle('statusbarDarkColor', false);">change style: statusbar dark mode (Android)</button>
+		<button onclick="env.setStatusbarStyle('statusbarDarkOverlayColor', false);">change style: statusbar dark overlay mode (Android)</button>
+		<h3>.openAppSettings()</h3>
+		<button onclick="env.openAppSettings();">open app settings</button>
+		<h3>.openURL()</h3>
+		<button onclick="env.openURL('https://www.google.com');">open web: google.com</button>
+		<button onclick="env.openURL('tel:+56912345678');">call phone: +56912345678</button>
+		<button onclick="env.openURL('mailto:test@test.com?subject=Test&body=Test%201');">compouse mail: test@test.com</button>
+		<hr>
+		<h3>.onReady()</h3>
+		<div>sync return:</div>
+		<pre id="onReady_async">...</pre>
+		<h3>.onReceiveDeepLink()</h3>
+		<div>async return:</div>
+		<pre id="onReceiveDeepLink_async">...</pre>
+		<script>
+			env.onReady((totalRequests) => {print("onReady_async", "totalRequests: "+totalRequests);});
+			env.onReceiveDeepLink((url) => {print("onReceiveDeepLink_async", url);});
+		</script>
+	</body>
+</html>

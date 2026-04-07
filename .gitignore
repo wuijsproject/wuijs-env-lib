@@ -1,0 +1,18 @@
+# OS generated files
+
+._*
+.DS_Store
+.DS_Store?
+Thumbs.db
+
+# Editor generated files
+
+.vscode
+.claude
+CLAUDE.md
+MEMORY.md
+NOTES.md
+
+# Trash develop
+
+_*
