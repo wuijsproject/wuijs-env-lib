@@ -1,5 +1,5 @@
 > [!NOTE]
-> For the Spanish version of this document, see [README.md](./README.md).
+> For the Spanish version of this document, see [LEEME.md](./LEEME.md).
 
 > [!WARNING]
 > Este documento aún no ha sido terminado y esta en una versión preliminar.
