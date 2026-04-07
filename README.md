@@ -85,7 +85,7 @@ wuijs-env-lib/
 │       ├── test/
 │       │   ├── test.html
 │       │   └── download.pdf
-│       └── wuienv-web-0.1.js
+│       └── wuienvironment-0.1.js
 ├── LEEME.md
 ├── LICENSE
 └── README.md
@@ -106,7 +106,7 @@ wuijs-env-lib/
 | [src/web/test](src/web/test/)                                                    | Directory with the WUI/JS Environment library test interface. |
 | [src/web/test/test.html](src/web/test/test.html)                                 | WUI/JS Environment library test interface. |
 | [src/web/test/download.pdf](src/web/test/download.pdf)                           | PDF file for download testing. |
-| [src/web/wuienv-web-0.1.js](src/web/wuienv-web-0.1.js)                           | JavaScript class for Web. |
+| [src/web/wuienvironment-0.1.js](src/web/wuienvironment-0.1.js)                           | JavaScript class for Web. |
 
 > [!NOTE]
 > The `wuijs-env-lib` library operates jointly, meaning the **Android + Web** or **iOS + Web** combination must be implemented for it to work correctly.
@@ -287,11 +287,11 @@ package com.your.package; // Change this to your project's package ID
 
 <a name="android-config-js"></a>
 
-#### 7. JavaScript Class Integration `wuienv-web-0.1.js`
+#### 7. JavaScript Class Integration `wuienvironment-0.1.js`
 
 Copy the contents of the `src/web/` directory to the `assets/` directory of the Android project. The following structure is recommended:
 
-- `app/src/main/assets/libraries/wuienv/wuienv-web-0.1.js`
+- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
 - `app/src/main/assets/libraries/wuienv/test/test.html`
 
 This will ensure that the initialization examples work correctly.
@@ -400,11 +400,11 @@ git clone https://github.com/wuiproject/wuijs-env-lib.git
 
 Copy the file `src/ios/WUIEnvironment.swift` into the Xcode project.
 
-#### 3. JavaScript Class Integration `wuienv-web-0.1.js`
+#### 3. JavaScript Class Integration `wuienvironment-0.1.js`
 
 Copy the contents of the `src/web/` directory to the `assets/` directory of the iOS project. The following structure is recommended:
 
-- `app/src/main/assets/libraries/wuienv/wuienv-web-0.1.js`
+- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
 - `app/src/main/assets/libraries/wuienv/test/test.html`
 
 This will ensure that the initialization examples work correctly.

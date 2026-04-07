@@ -85,7 +85,7 @@ wuijs-env-lib/
 │       ├── test/
 │       │   ├── test.html
 │       │   └── download.pdf
-│       └── wuienv-web-0.1.js
+│       └── wuienvironment-0.1.js
 ├── LEEME.md
 ├── LICENSE
 └── README.md
@@ -106,7 +106,7 @@ wuijs-env-lib/
 | [src/web/test](src/web/test/)                                                    | Directorio con interfaz de prueba de la librería WUI/JS Enviroment. |
 | [src/web/test/test.html](src/web/test/test.html)                                 | Interfaz de prueba de la librería WUI/JS Enviroment. |
 | [src/web/test/download.pdf](src/web/test/download.pdf)                           | Archivo PDF de prueba de descarga. |
-| [src/web/wuienv-web-0.1.js](src/web/wuienv-web-0.1.js)                           | Clase JavaScript para Web. |
+| [src/web/wuienvironment-0.1.js](src/web/wuienvironment-0.1.js)                           | Clase JavaScript para Web. |
 
 > [!NOTE]
 > La librería `wuijs-env-lib` opera conjuntamente, es decir, se debe implementar la combinación **Android + Web** o **iOS + Web** para su correcto funcionamiento.
@@ -287,11 +287,11 @@ package com.tu.paquete; // Cambia esto por el ID de paquete de tu proyecto
 
 <a name="android-config-js"></a>
 
-#### 7. Integración de la calse JavaScript `wuienv-web-0.1.js`
+#### 7. Integración de la calse JavaScript `wuienvironment-0.1.js`
 
 Copia el contenido del directorio `src/web/` al directorio `assets/` del proyecto Android. Se recomienda utilizar la siguiente estructura:
 
-- `app/src/main/assets/libraries/wuienv/wuienv-web-0.1.js`
+- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
 - `app/src/main/assets/libraries/wuienv/test/test.html`
 
 Esto asegurará que los ejemplos de inicialización funcionen correctamente.
@@ -400,11 +400,11 @@ git clone https://github.com/wuiproject/wuijs-env-lib.git
 
 Copiar el archivo `src/ios/WUIEnvironment.swift` al proyecto en Xcode.
 
-#### 3. Integración de la calse JavaScript `wuienv-web-0.1.js`
+#### 3. Integración de la calse JavaScript `wuienvironment-0.1.js`
 
 Copia el contenido del directorio `src/web/` al directorio `assets/` del proyecto Android. Se recomienda utilizar la siguiente estructura:
 
-- `app/src/main/assets/libraries/wuienv/wuienv-web-0.1.js`
+- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
 - `app/src/main/assets/libraries/wuienv/test/test.html`
 
 Esto asegurará que los ejemplos de inicialización funcionen correctamente.

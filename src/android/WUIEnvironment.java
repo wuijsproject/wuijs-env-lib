@@ -1,8 +1,9 @@
 /*
- * WUIEnvironment Java/Android - v0.1
- * Author: Sergio E. Belmar (wuijs.project@gmail.com)
- * Copyright (c) Sergio E. Belmar (wuijs.project@gmail.com)
+ * @file WUIEnvironment.java
+ * @class WUIEnvironment
  * @version 0.1
+ * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
+ * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
  */
 
 package app.android.mypackage;

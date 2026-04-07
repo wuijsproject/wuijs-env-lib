@@ -1,7 +1,9 @@
 /*
- * WUIEnvironment - v0.1
- * Author: Sergio E. Belmar (wuijs.project@gmail.com)
- * Copyright (c) Sergio E. Belmar (wuijs.project@gmail.com)
+ * @file wuienvironment-0.1.js
+ * @class WUIEnvironment
+ * @version 0.1
+ * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
+ * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
  */
 
 class WUIEnvironment {
