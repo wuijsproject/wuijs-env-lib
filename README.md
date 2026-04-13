@@ -4,10 +4,10 @@
 > [!WARNING]
 > This document is not yet finished and is in a preliminary version.
 
-# wuijs-env-lib
+# wuijs-environment-lib
 
 <div align="center">
-	<img src="https://github.com/wuijsproject/wuijs-env-lib/blob/main/imgs/logo/wuijs-env-logotype-color.svg" width="220" height="220">
+	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
 Library version: `0.1.0`
@@ -22,7 +22,7 @@ Author: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 
 *   [Overview](#overview)
 	*   [About the WUI/JS Project](#project)
-	*   [File and Directory Map](#dirmap)
+	*   [Directory Map](#dirmap)
 *   [Android Implementation](#android)
 	*   [Installation and Setup](#android-install)
 		1.   [Clone the library](#android-clone)
@@ -52,64 +52,48 @@ It is currently available for Android in Java via WebView and for iOS in Swift v
 
 WUI/JS Lib is part of the WUI JS project, which currently consists of 3 repositories:
 
--	[https://github.com/wuijsproject/wuijs-lib](https://github.com/wuijsproject/wuijs-lib)<br>
+-	[https://github.com/wui-js/wuijs-main-lib](https://github.com/wui-js/wuijs-main-lib)<br>
 	Main UI library.<br><br>
--	[https://github.com/wuijsproject/wuijs-plugins-lib](https://github.com/wuijsproject/wuijs-plugins-lib)<br>
+-	[https://github.com/wui-js/wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib)<br>
 	Plugins for the main UI library.<br><br>
--	[https://github.com/wuijsproject/wuijs-env-lib](https://github.com/wuijsproject/wuijs-env-lib)<br>
+-	[https://github.com/wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib)<br>
 	Bridge between web environments and native web rendering engines via JavaScript.<br><br>
--	[https://github.com/wuijsproject/wuijs-lab](https://github.com/wuijsproject/wuijs-lab)<br>
+-	[https://github.com/wui-js/wuijs-lab](https://github.com/wui-js/wuijs-lab)<br>
 	Repository with demos and usage examples for both the main UI library classes and the plugins.<br><br>
 
 <a name="dirmap"></a>
 
-### File and Directory Map
+### Directory Map
 
-The library must be downloaded from the GitHub repository [wuiproject/wuijs-env-lib](https://github.com/wuiproject/wuijs-env-lib). This library includes 3 classes: Java for Android, Swift for iOS, and JavaScript as the web counterpart for both.
+The library must be downloaded from the GitHub repository [wui-is/wuijs-environment-lib](https://github.com/wui-is/wuijs-environment-lib). This library includes 3 classes: Java for Android, Swift for iOS, and JavaScript as the web counterpart for both.
 
 The repository directory structure is:
 
 ```bash
-wuijs-env-lib/
+wuijs-environment-lib/
 ├── imgs/
 │   └── logo/
-│       ├── wuijs-env-logotype-color.png
-│       └── wuijs-env-logotype-color.svg
-├── src/
-│   ├── android/
-│   │   └── WUIEnvironment.java
-│   ├── ios/
-│   │   └── WUIEnvironment.swift
-│   └── web/
-│       ├── LICENSE
-│       ├── test/
-│       │   ├── test.html
-│       │   └── download.pdf
-│       └── wuienvironment-0.1.js
-├── LEEME.md
-├── LICENSE
-└── README.md
+└── src/
+    └── wui-js/
+        ├── android/
+        ├── ios/
+        └── environment/
+            └── test/
 ```
 
-| Path                                                                             | Description |
-| -------------------------------------------------------------------------------- | ----------- |
-| [imgs](imgs/)                                                                    | Images used in the documentation. |
-| [imgs/logo](imgs/logo/)                                                          | Project logotype and isotype in SVG and PNG format. |
-| [imgs/logo/wuijs-env-logotype-color.png](imgs/logo/wuijs-env-logotype-color.png) | Project logotype and isotype in PNG format. |
-| [imgs/logo/wuijs-env-logotype-color.svg](imgs/logo/wuijs-env-logotype-color.svg) | Project logotype and isotype in SVG format. |
-| [src](src/)                                                                      | Main sources for the latest version. |
-| [src/android](src/android/)                                                      | WUI/JS Environment library for Android. |
-| [src/android/WUIEnvironment.java](src/android/WUIEnvironment.java)               | Java class for Android. |
-| [src/ios](src/ios/)                                                              | WUI/JS Environment library for iOS. |
-| [src/ios/WUIEnvironment.swift](src/ios/WUIEnvironment.swift)                     | Swift class for iOS. |
-| [src/web](src/web/)                                                              | WUI/JS Environment library for Web. |
-| [src/web/test](src/web/test/)                                                    | Directory with the WUI/JS Environment library test interface. |
-| [src/web/test/test.html](src/web/test/test.html)                                 | WUI/JS Environment library test interface. |
-| [src/web/test/download.pdf](src/web/test/download.pdf)                           | PDF file for download testing. |
-| [src/web/wuienvironment-0.1.js](src/web/wuienvironment-0.1.js)                           | JavaScript class for Web. |
+| Path                                                 | Description |
+| ---------------------------------------------------- | ----------- |
+| [imgs](imgs/)                                        | Images used in the documentation. |
+| [imgs/logo](imgs/logo/)                              | Project logotype and isotype in SVG and PNG format. |
+| [src](src/)                                          | Main sources for the latest version. |
+| [src/wui-js](src/wui-js)                             | WUI/JS project directory. |
+| [src/wui-js/android](src/android/)                   | WUI/JS Environment library for Android. |
+| [src/wui-js/ios](src/ios/)                           | WUI/JS Environment library for iOS. |
+| [src/wui-js/environment](src/environment/)           | WUI/JS Environment library for Web. |
+| [src/wui-js/environment/test](src/environment/test/) | Directory with the WUI/JS Environment library test interface. |
 
 > [!NOTE]
-> The `wuijs-env-lib` library operates jointly, meaning the **Android + Web** or **iOS + Web** combination must be implemented for it to work correctly.
+> The `wuijs-environment-lib` library operates jointly, meaning the **Android + Web** or **iOS + Web** combination must be implemented for it to work correctly.
 
 <a name="android"></a>
 
@@ -128,7 +112,7 @@ The Android implementation uses WebView as its rendering engine.
 Clone the repository from the official wuiproject account on GitHub:
 
 ```bash
-git clone https://github.com/wuiproject/wuijs-env-lib.git
+git clone https://github.com/wui-is/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -390,7 +374,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine.
 If you haven't done so already, clone the repository from GitHub:
 
 ```bash
-git clone https://github.com/wuiproject/wuijs-env-lib.git
+git clone https://github.com/wui-is/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -435,9 +419,3 @@ This will ensure that the initialization examples work correctly.
 | `openURL`               | `void`                    | `openURL(url)`<br><br>Arguments:<br>**• url:** `string`, the destination URL or local asset path.<br><br>Opens a local resource in the WebView or an external link. |
 | `readDeepLink`          | `Promise<string>`         | `readDeepLink(done)`<br><br>Arguments:<br>**• done:** `function`, optional callback.<br><br>Reads the last received Deep Link URL. |
 | `clearDeepLink`         | `void`                    | `clearDeepLink(done)`<br><br>Arguments:<br>**• done:** `function`, optional callback.<br><br>Clears the stored Deep Link URL. |
-
-## Author
-
-**Sergio E. Belmar V.**
-- GitHub: [https://github.com/sbelmar](https://github.com/sbelmar)
-- LinkedIn: [https://www.linkedin.com/in/sbelmarv/](https://www.linkedin.com/in/sbelmarv/)

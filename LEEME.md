@@ -4,10 +4,10 @@
 > [!WARNING]
 > Este documento aún no ha sido terminado y esta en una versión preliminar.
 
-# wuijs-env-lib
+# wuijs-environment-lib
 
 <div align="center">
-	<img src="https://github.com/wuijsproject/wuijs-env-lib/blob/main/imgs/logo/wuijs-env-logotype-color.svg" width="220" height="220">
+	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
 Versión librería: `0.1.0`
@@ -22,7 +22,7 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 
 *   [Descripción General](#overview)
 	*   [Acerca del Proyecto WUI JS](#project)
-	*   [Mapa de Archivos y Directorios](#dirmap)
+	*   [Mapa de Directorios](#dirmap)
 *   [Implementación en Android](#android)
 	*   [Instalación y Configuración](#android-install)
 		1.   [Clonar la librería](#android-clone)
@@ -52,64 +52,48 @@ Actualmente está disponible para Android en Java mediante WebView y para iOS en
 
 WUI/JS Lib es parte del proyecto WUI JS, que consta actualmente de 3 repositorios:
 
--	[https://github.com/wuijsproject/wuijs-lib](https://github.com/wuijsproject/wuijs-lib)<br>
+-	[https://github.com/wui-js/wuijs-main-lib](https://github.com/wui-js/wuijs-main-lib)<br>
 	Librería UI principal.<br><br>
--	[https://github.com/wuijsproject/wuijs-plugins-lib](https://github.com/wuijsproject/wuijs-plugins-lib)<br>
+-	[https://github.com/wui-js/wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib)<br>
 	Complementos de la librería UI principal.<br><br>
--	[https://github.com/wuijsproject/wuijs-env-lib](https://github.com/wuijsproject/wuijs-env-lib)<br>
+-	[https://github.com/wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib)<br>
 	Puente entre entornos web y motores de renderizado web nativos mediante JavaScript.<br><br>
--	[https://github.com/wuijsproject/wuijs-lab](https://github.com/wuijsproject/wuijs-lab)<br>
+-	[https://github.com/wui-js/wuijs-lab](https://github.com/wui-js/wuijs-lab)<br>
 	Repositorio con demos y ejemplos de uso tanto de las clases de la librería UI principal como de los complementos.<br><br>
 
 <a name="dirmap"></a>
 
-### Mapa de Archivos y Directorios
+### Mapa de Directorios
 
-La librería debe ser descargada desde el repositorio de GitHub [wuiproject/wuijs-env-lib](https://github.com/wuiproject/wuijs-env-lib). Esta librería cuenta con las 3 clases, Java para Android, Swift para iOS y JavaScript como contraparte Web para las dos anteriores.
+La librería debe ser descargada desde el repositorio de GitHub [wui-is/wuijs-environment-lib](https://github.com/wui-is/wuijs-environment-lib). Esta librería cuenta con las 3 clases, Java para Android, Swift para iOS y JavaScript como contraparte Web para las dos anteriores.
 
 La estructura de directorios del repositorio es:
 
 ```bash
-wuijs-env-lib/
+wuijs-environment-lib/
 ├── imgs/
 │   └── logo/
-│       ├── wuijs-env-logotype-color.png
-│       └── wuijs-env-logotype-color.svg
-├── src/
-│   ├── android/
-│   │   └── WUIEnvironment.java
-│   ├── ios/
-│   │   └── WUIEnvironment.swift
-│   └── web/
-│       ├── LICENSE
-│       ├── test/
-│       │   ├── test.html
-│       │   └── download.pdf
-│       └── wuienvironment-0.1.js
-├── LEEME.md
-├── LICENSE
-└── README.md
+└── src/
+    └── wui-js/
+        ├── android/
+        ├── ios/
+        └── environment/
+            └── test/
 ```
 
-| Ruta                                                                             | Descripción |
-| -------------------------------------------------------------------------------- | ----------- |
-| [imgs](imgs/)                                                                    | Imágenes utilizadas en la documentación. |
-| [imgs/logo](imgs/logo/)                                                          | Logotipo e isotipo del proyecto en formato SVG y PNG. |
-| [imgs/logo/wuijs-env-logotype-color.png](imgs/logo/wuijs-env-logotype-color.png) | Logotipo e isotipo del proyecto en formato PNG. |
-| [imgs/logo/wuijs-env-logotype-color.svg](imgs/logo/wuijs-env-logotype-color.svg) | Logotipo e isotipo del proyecto en formato SVG. |
-| [src](src/)                                                                      | Fuentes principales de la última versión. |
-| [src/android](src/android/)                                                      | Librería WUI/JS Enviroment para Android. |
-| [src/android/WUIEnvironment.java](src/android/WUIEnvironment.java)               | Clase Java para Android. |
-| [src/ios](src/ios/)                                                              | Librería WUI/JS Enviroment para iOS. |
-| [src/ios/WUIEnvironment.swift](src/ios/WUIEnvironment.swift)                     | Clase Swift para iOS. |
-| [src/web](src/web/)                                                              | Librería WUI/JS Enviroment para Web. |
-| [src/web/test](src/web/test/)                                                    | Directorio con interfaz de prueba de la librería WUI/JS Enviroment. |
-| [src/web/test/test.html](src/web/test/test.html)                                 | Interfaz de prueba de la librería WUI/JS Enviroment. |
-| [src/web/test/download.pdf](src/web/test/download.pdf)                           | Archivo PDF de prueba de descarga. |
-| [src/web/wuienvironment-0.1.js](src/web/wuienvironment-0.1.js)                           | Clase JavaScript para Web. |
+| Ruta                                                 | Descripción |
+| ---------------------------------------------------- | ----------- |
+| [imgs](imgs/)                                        | Imágenes utilizadas en la documentación. |
+| [imgs/logo](imgs/logo/)                              | Logotipo e isotipo del proyecto en formato SVG y PNG. |
+| [src](src/)                                          | Fuentes principales de la última versión. |
+| [src/wui-js](src/wui-js)                             | Directorio del proyecto WUI/JS. |
+| [src/wui-js/android](src/android/)                   | Librería WUI/JS Enviroment para Android. |
+| [src/wui-js/ios](src/ios/)                           | Librería WUI/JS Enviroment para iOS. |
+| [src/wui-js/environment](src/environment/)           | Librería WUI/JS Enviroment para Web. |
+| [src/wui-js/environment/test](src/environment/test/) | Directorio con interfaz de prueba de la librería WUI/JS Enviroment. |
 
 > [!NOTE]
-> La librería `wuijs-env-lib` opera conjuntamente, es decir, se debe implementar la combinación **Android + Web** o **iOS + Web** para su correcto funcionamiento.
+> La librería `wuijs-environment-lib` opera conjuntamente, es decir, se debe implementar la combinación **Android + Web** o **iOS + Web** para su correcto funcionamiento.
 
 <a name="android"></a>
 
@@ -128,7 +112,7 @@ La implementación en Android utiliza como motor de renderización WebView.
 Clonar el repositorio desde la cuenta oficial de wuiproject en GitHub:
 
 ```bash
-git clone https://github.com/wuiproject/wuijs-env-lib.git
+git clone https://github.com/wui-is/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -390,7 +374,7 @@ La implementación en iOS utiliza como motor de renderización WebKit (WKWebView
 Si aún no lo has hecho, clona el repositorio desde GitHub:
 
 ```bash
-git clone https://github.com/wuiproject/wuijs-env-lib.git
+git clone https://github.com/wui-is/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -435,9 +419,3 @@ Esto asegurará que los ejemplos de inicialización funcionen correctamente.
 | `openURL`               | `void`                    | `openURL(url)`<br><br>Argumentos:<br>**• url:** `string`, la URL de destino o ruta de asset local.<br><br>Abre un recurso local en el WebView o un enlace externo. |
 | `readDeepLink`          | `Promise<string>`         | `readDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Lee la última URL de Deep Link recibida. |
 | `clearDeepLink`         | `void`                    | `clearDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Limpia la URL de Deep Link almacenada. |
-
-## Autor
-
-**Sergio E. Belmar V.**
-- GitHub: [https://github.com/sbelmar](https://github.com/sbelmar)
-- LinkedIn: [https://www.linkedin.com/in/sbelmarv/](https://www.linkedin.com/in/sbelmarv/)
