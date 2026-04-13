@@ -87,7 +87,7 @@ wuijs-environment-lib/
 | [imgs/logo](imgs/logo/)                              | Logotipo e isotipo del proyecto en formato SVG y PNG. |
 | [src](src/)                                          | Fuentes principales de la última versión. |
 | [src/wui-js](src/wui-js)                             | Directorio del proyecto WUI/JS. |
-| [src/wui-js/android](src/android/)                   | Librería WUI/JS Enviroment para Android. |
+| [src/wui-js/android](src/wui-js/android/)                   | Librería WUI/JS Enviroment para Android. |
 | [src/wui-js/ios](src/ios/)                           | Librería WUI/JS Enviroment para iOS. |
 | [src/wui-js/environment](src/environment/)           | Librería WUI/JS Enviroment para Web. |
 | [src/wui-js/environment/test](src/environment/test/) | Directorio con interfaz de prueba de la librería WUI/JS Enviroment. |
@@ -260,7 +260,7 @@ La librería utiliza estas llaves para el estilo de las barras de estado y naveg
 
 #### 6. Integración de la clase Java `WUIEnvironment.java`
 
-Copiar el archivo `src/android/WUIEnvironment.java` a la carpeta de fuentes de tu proyecto (ej: `app/src/main/java/com/tu/paquete/` si el ID del paquete definido fuese `com.tu.paquete`).
+Copiar el archivo `src/wui-js/android/WUIEnvironment.java` a la carpeta de fuentes de tu proyecto (ej: `app/src/main/java/com/tu/paquete/` si el ID del paquete definido fuese `com.tu.paquete`).
 
 > [!IMPORTANT]
 > Debes editar la primera línea del archivo para que coincida con el ID del paquete de la aplicación:
@@ -271,12 +271,12 @@ package com.tu.paquete; // Cambia esto por el ID de paquete de tu proyecto
 
 <a name="android-config-js"></a>
 
-#### 7. Integración de la calse JavaScript `wuienvironment-0.1.js`
+#### 7. Integración de la calse JavaScript `wui-environment-0.1.js`
 
 Copia el contenido del directorio `src/web/` al directorio `assets/` del proyecto Android. Se recomienda utilizar la siguiente estructura:
 
-- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
-- `app/src/main/assets/libraries/wuienv/test/test.html`
+- `app/src/main/assets/libraries/wui-js/environment/wui-environment-0.1.js`
+- `app/src/main/assets/libraries/wui-js/environment/test/test.html`
 
 Esto asegurará que los ejemplos de inicialización funcionen correctamente.
 
@@ -350,11 +350,11 @@ const display = JSON.parse(Android.request(JSON.stringify({ func: "getDisplayInf
 console.log("Modo de navegación:", display.navigationMode);
 ```
 
-No obstante, para manejo de eventos enviados desde Java se requiere el objeto global `WUIEnvironment` proporcionado por la librería JavaScript mediante el método público `_response()`:
+No obstante, para manejo de eventos enviados desde Java se requiere el objeto global `WUIEnvironment` proporcionado por la librería JavaScript mediante el método público `response()`:
 
 ```javascript
 // Manejo de eventos enviados desde Java
-WUIEnvironment._response = function(args) {
+WUIEnvironment.response = function(args) {
     if (args.event == "onReceiveDeepLink") {
         console.log("Deep Link recibido:", args.url);
     }
@@ -384,12 +384,12 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 Copiar el archivo `src/ios/WUIEnvironment.swift` al proyecto en Xcode.
 
-#### 3. Integración de la calse JavaScript `wuienvironment-0.1.js`
+#### 3. Integración de la calse JavaScript `wui-environment-0.1.js`
 
 Copia el contenido del directorio `src/web/` al directorio `assets/` del proyecto Android. Se recomienda utilizar la siguiente estructura:
 
-- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
-- `app/src/main/assets/libraries/wuienv/test/test.html`
+- `app/src/main/assets/libraries/wui-js/environment/wui-environment-0.1.js`
+- `app/src/main/assets/libraries/wui-js/environment/test/test.html`
 
 Esto asegurará que los ejemplos de inicialización funcionen correctamente.
 

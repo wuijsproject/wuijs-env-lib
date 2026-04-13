@@ -1,5 +1,5 @@
 /*
- * @file wuienvironment-0.1.js
+ * @file wui-environment-0.1.js
  * @class WUIEnvironment
  * @version 0.1
  * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
@@ -21,7 +21,7 @@ class WUIEnvironment {
 	#resCount = 0;
 	#responses = {};
 
-	static _response(args) {
+	static response(args) {
 		const instance = WUIEnvironment.#instance;
 		const event = args.event || "";
 		delete args.event;

@@ -87,7 +87,7 @@ wuijs-environment-lib/
 | [imgs/logo](imgs/logo/)                              | Project logotype and isotype in SVG and PNG format. |
 | [src](src/)                                          | Main sources for the latest version. |
 | [src/wui-js](src/wui-js)                             | WUI/JS project directory. |
-| [src/wui-js/android](src/android/)                   | WUI/JS Environment library for Android. |
+| [src/wui-js/android](src/wui-js/android/)                   | WUI/JS Environment library for Android. |
 | [src/wui-js/ios](src/ios/)                           | WUI/JS Environment library for iOS. |
 | [src/wui-js/environment](src/environment/)           | WUI/JS Environment library for Web. |
 | [src/wui-js/environment/test](src/environment/test/) | Directory with the WUI/JS Environment library test interface. |
@@ -260,7 +260,7 @@ The library uses these keys for the status and navigation bar styles:
 
 #### 6. Java Class Integration `WUIEnvironment.java`
 
-Copy the file `src/android/WUIEnvironment.java` to your project's source folder (e.g.: `app/src/main/java/com/your/package/` if the defined package ID is `com.your.package`).
+Copy the file `src/wui-js/android/WUIEnvironment.java` to your project's source folder (e.g.: `app/src/main/java/com/your/package/` if the defined package ID is `com.your.package`).
 
 > [!IMPORTANT]
 > You must edit the first line of the file to match your application's package ID:
@@ -271,12 +271,12 @@ package com.your.package; // Change this to your project's package ID
 
 <a name="android-config-js"></a>
 
-#### 7. JavaScript Class Integration `wuienvironment-0.1.js`
+#### 7. JavaScript Class Integration `wui-environment-0.1.js`
 
 Copy the contents of the `src/web/` directory to the `assets/` directory of the Android project. The following structure is recommended:
 
-- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
-- `app/src/main/assets/libraries/wuienv/test/test.html`
+- `app/src/main/assets/libraries/wui-js/environment/wui-environment-0.1.js`
+- `app/src/main/assets/libraries/wui-js/environment/test/test.html`
 
 This will ensure that the initialization examples work correctly.
 
@@ -350,11 +350,11 @@ const display = JSON.parse(Android.request(JSON.stringify({ func: "getDisplayInf
 console.log("Navigation mode:", display.navigationMode);
 ```
 
-However, handling events sent from Java requires the global `WUIEnvironment` object provided by the JavaScript library via the public method `_response()`:
+However, handling events sent from Java requires the global `WUIEnvironment` object provided by the JavaScript library via the public method `response()`:
 
 ```javascript
 // Handling events sent from Java
-WUIEnvironment._response = function(args) {
+WUIEnvironment.response = function(args) {
     if (args.event == "onReceiveDeepLink") {
         console.log("Deep Link received:", args.url);
     }
@@ -384,12 +384,12 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 Copy the file `src/ios/WUIEnvironment.swift` into the Xcode project.
 
-#### 3. JavaScript Class Integration `wuienvironment-0.1.js`
+#### 3. JavaScript Class Integration `wui-environment-0.1.js`
 
 Copy the contents of the `src/web/` directory to the `assets/` directory of the iOS project. The following structure is recommended:
 
-- `app/src/main/assets/libraries/wuienv/wuienvironment-0.1.js`
-- `app/src/main/assets/libraries/wuienv/test/test.html`
+- `app/src/main/assets/libraries/wui-js/environment/wui-environment-0.1.js`
+- `app/src/main/assets/libraries/wui-js/environment/test/test.html`
 
 This will ensure that the initialization examples work correctly.
 

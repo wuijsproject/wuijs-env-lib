@@ -750,7 +750,7 @@ public class WUIEnvironment {
 
     private void pushJavascript(JSONObject arguments) throws JSONException {
         if (webView != null) {
-            String js = "WUIEnvironment._response("+arguments.toString()+")";
+            String js = "WUIEnvironment.response("+arguments.toString()+")";
             webView.evaluateJavascript(js, null);
         }
     }
