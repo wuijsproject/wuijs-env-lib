@@ -6,7 +6,7 @@
  * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
  */
 
-package app.android.mypackage;
+package YOUR_PACKAGE_NAME; // Update this to match your project package
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -59,6 +59,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.io.File;
 import android.app.DownloadManager;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class WUIEnvironment {
 	
@@ -108,6 +111,7 @@ public class WUIEnvironment {
         webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         webSettings.setDomStorageEnabled(true);
         webSettings.setDatabaseEnabled(true);
+        webSettings.setGeolocationEnabled(true);
         webSettings.setLoadWithOverviewMode(true);
         webSettings.setUseWideViewPort(true);
         webSettings.setBuiltInZoomControls(true);
@@ -289,7 +293,7 @@ public class WUIEnvironment {
                         arguments.put("event", "onDownloadFile");
                         arguments.put("filename", filename);
                         arguments.put("mimetype", mimetype);
-                        arguments.put("uri", uri);
+                        arguments.put("uri", uri.toString());
                         pushJavascript(arguments);
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
@@ -532,22 +536,77 @@ public class WUIEnvironment {
                 return position;
             }
             LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if (location == null) {
+            if (locationManager == null) {
+                position.put("error", "LocationManager not available");
+                return position;
+            }
+            boolean isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            boolean isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            if (!isGpsEnabled && !isNetworkEnabled) {
+                position.put("error", "Location services are disabled (GPS and Network)");
+                return position;
+            }
+            Location location = null;
+            if (isNetworkEnabled) {
                 location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             }
+            if (location == null && isGpsEnabled) {
+                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            }
+
+            // If still null, try any other available provider
+            if (location == null) {
+                for (String provider : locationManager.getProviders(true)) {
+                    Location l = locationManager.getLastKnownLocation(provider);
+                    if (l != null) {
+                        location = l;
+                        break;
+                    }
+                }
+            }
+
+            // If still null, try to get a fresh location (Android 11+)
+            if (location == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                final Location[] freshLocation = new Location[1];
+                final CountDownLatch latch = new CountDownLatch(1);
+                try {
+                    String provider = isGpsEnabled ? LocationManager.GPS_PROVIDER : LocationManager.NETWORK_PROVIDER;
+                    locationManager.getCurrentLocation(
+                            provider,
+                            null,
+                            activity.getMainExecutor(),
+                            new Consumer<Location>() {
+                                @Override
+                                public void accept(Location loc) {
+                                    freshLocation[0] = loc;
+                                    latch.countDown();
+                                }
+                            });
+
+                    // Wait up to 5 seconds for a fresh location
+                    if (latch.await(5, TimeUnit.SECONDS)) {
+                        location = freshLocation[0];
+                    }
+                } catch (Exception e) {
+                    Log.e(logTag, "Error requesting fresh location: " + e.getMessage());
+                }
+            }
+
             if (location != null) {
                 position.put("latitude", location.getLatitude());
                 position.put("longitude", location.getLongitude());
                 position.put("accuracy", location.getAccuracy());
                 position.put("provider", location.getProvider());
+                position.put("timestamp", location.getTime());
             } else {
-                position.put("error", "Could not get current position");
+                String status = "GPS: " + (isGpsEnabled ? "ON" : "OFF") + ", Network: " + (isNetworkEnabled ? "ON" : "OFF");
+                position.put("error", "Location unavailable. Cache is empty and fresh request timed out. " + status);
+                Log.w(logTag, "Could not get location. Status: " + status);
             }
         } catch (Exception e) {
             try {
                 position.put("error", "Failed to get current position: " + e.getMessage());
-            } catch (Exception ex) {
+            } catch (JSONException ex) {
                 throw new RuntimeException(ex);
             }
         }
@@ -748,10 +807,12 @@ public class WUIEnvironment {
         deepLinkURL = null;
     }
 
-    private void pushJavascript(JSONObject arguments) throws JSONException {
+    private void pushJavascript(JSONObject arguments) {
         if (webView != null) {
-            String js = "WUIEnvironment.response("+arguments.toString()+")";
-            webView.evaluateJavascript(js, null);
+            activity.runOnUiThread(() -> {
+                String js = "WUIEnvironment.response(" + arguments.toString() + ")";
+                webView.evaluateJavascript(js, null);
+            });
         }
     }
 

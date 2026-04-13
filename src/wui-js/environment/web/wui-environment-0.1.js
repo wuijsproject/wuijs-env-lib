@@ -24,8 +24,14 @@ class WUIEnvironment {
 	static response(args) {
 		const instance = WUIEnvironment.#instance;
 		const event = args.event || "";
+		const code = args.code || null;
 		delete args.event;
+		delete args.code;
 		if (instance != null) {
+			if (code != null && instance.#responses[code] !== undefined) {
+				instance.#responses[code] = args.response !== undefined ? args.response : args;
+				return;
+			}
 			switch (event) {
 				case "onDownloadFile":
 					if (typeof (instance.onDownloadFile) == "function") {
@@ -106,15 +112,16 @@ class WUIEnvironment {
 				this.#resCount++;
 			} else if (this.environment == "wui.ios") {
 				const code = this.#reqCount;
-				this.#responses[code] = "";
+				this.#responses[code] = null;
 				options.code = code;
 				webkit.messageHandlers.request.postMessage(options);
 				const check = setInterval(() => {
-					if (Object.keys(this.#responses[code]).length > 0) {
+					if (this.#responses[code] !== null) {
 						clearInterval(check);
-						resolve(response);
+						const response = this.#responses[code];
 						delete this.#responses[code];
 						this.#resCount++;
+						resolve(response);
 					}
 				}, this.#checkInterval);
 			}
