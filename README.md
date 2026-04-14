@@ -39,10 +39,13 @@ Author: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 *   [iOS Implementation](#ios)
 	*   [Swift Constructor](#ios-constructor)
 	*   [Swift Methods](#ios-methods)
+	*   [iOS Events](#ios-events)
 	*   [Installation and Setup](#ios-install)
 		1.   [Clone the library](#ios-clone)
 		2.   [Swift Class Integration](#ios-config-wui-environment-swift)
-		3.   [Initialization](#ios-config-viewcontroller)
+		3.   [Permissions Configuration](#ios-config-permissions)
+		4.   [Initialization](#ios-config-viewcontroller)
+	*   [JavaScript Usage for iOS](#ios-js-usage)
 *   [Web Implementation](#web)
 	*   [JavaScript Methods](#web-methods)
 
@@ -57,7 +60,7 @@ It is currently available for Android in Java via WebView and for iOS in Swift v
 
 ### About the WUI/JS Project
 
-WUI/JS Lib is part of the WUI JS project, which currently consists of 3 repositories:
+WUI/JS Main Lib is part of the WUI/JS project, which currently consists of 3 repositories:
 
 -	[https://github.com/wui-js/wuijs-main-lib](https://github.com/wui-js/wuijs-main-lib)<br>
 	Main UI library.<br><br>
@@ -406,11 +409,11 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 | ----------------------- | --------------- | ----------- |
 | `isAppInForeground`     | `Bool`          | `isAppInForeground()`<br><br>Checks whether the application is currently in the foreground. |
 | `getDeviceInfo`         | `[String: Any]` | `getDeviceInfo()`<br><br>Returns device hardware information: `id`, `uuid`, `name`, `platform`, `version`, `maker`, `model`. |
-| `getDisplayInfo`        | `[String: Any]` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, and system bar style flags. |
+| `getDisplayInfo`        | `[String: Any]` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, and system bar style flags.<br><br>`statusbarTransparent` and `navigationbarTransparent` reflect the current state of the UIView overlays managed by `setStatusbarStyle` and `setNavigationbarStyle`: `true` when no opaque overlay is placed over that area. `navigationbarLightMode` is always `false` (the iOS home indicator adapts automatically). |
 | `getAppInfo`            | `[String: Any]` | `getAppInfo()`<br><br>Returns application metadata: `name`, `version`, `package`, `build`. |
-| `getPermissionsStatus`  | `void`          | `getPermissionsStatus(completion)`<br><br>Arguments:<br>**• completion:** `([String: Any]) -> Void`, callback with the result.<br><br>Checks the status of system permissions: `location`, `camera`, `contacts`, `notifications`. Possible values: `granted`, `denied`, `default`, `undefined`. Async — delivers the result on the main thread. |
-| `getCurrentPosition`    | `void`          | `getCurrentPosition(completion)`<br><br>Arguments:<br>**• completion:** `([String: Any]) -> Void`, callback with the result.<br><br>Obtains current GPS coordinates: `latitude`, `longitude`, `accuracy`, `provider`, `timestamp`. Requests location permission if not yet granted. Async — delivers the result via `CLLocationManagerDelegate`. |
-| `getConnectionStatus`   | `Bool`          | `getConnectionStatus()`<br><br>Checks whether an active internet connection exists via `NWPathMonitor`. |
+| `getPermissionsStatus`  | `void`          | `getPermissionsStatus(completion)`<br><br>Arguments:<br>**• completion:** `([String: Any]) -> Void`, callback with the result.<br><br>Checks the status of system permissions: `location`, `camera`, `contacts`, `notifications`. Possible values: `granted`, `denied`, `default`, `undefined`. The `phone` and `storage` keys are always `undefined` (no equivalent system permission in iOS). Async — delivers the result on the main thread. |
+| `getCurrentPosition`    | `void`          | `getCurrentPosition(completion)`<br><br>Arguments:<br>**• completion:** `([String: Any]) -> Void`, callback with the result.<br><br>Obtains current GPS coordinates: `latitude`, `longitude`, `accuracy`, `provider`, `timestamp`. Requests location permission if not yet granted. Async — delivers the result via `CLLocationManagerDelegate`.<br><br>> **Requires** `NSLocationWhenInUseUsageDescription` in `Info.plist`. Without it, iOS silently ignores the permission request. |
+| `getConnectionStatus`   | `Bool`          | `getConnectionStatus()`<br><br>Checks whether an active internet connection exists. Reads the current network state synchronously via `NWPathMonitor.currentPath`; the internal `pathUpdateHandler` keeps the cached state updated for subsequent calls. |
 | `setStatusbarStyle`     | `void`          | `setStatusbarStyle(color, darkIcons)`<br><br>Arguments:<br>**• color:** `String`, HEX color (`#RRGGBB`) or asset catalog color name.<br>**• darkIcons:** `Bool`, `true` for dark icons, `false` for light.<br><br>Places a UIView with the given color over the status bar area. Icon style is applied via `preferredStatusBarStyle` — the host ViewController must expose this property and call `setNeedsStatusBarAppearanceUpdate()`. |
 | `setNavigationbarStyle` | `void`          | `setNavigationbarStyle(color, darkIcons)`<br><br>Arguments:<br>**• color:** `String`, HEX color (`#RRGGBB`) or asset catalog color name.<br>**• darkIcons:** `Bool`, ignored on iOS (home indicator is not configurable).<br><br>Places a UIView with the given color over the `safeAreaInsets.bottom` area. No effect on devices with a home button. |
 | `saveFile`              | `Bool`          | `saveFile(name, content)`<br><br>Arguments:<br>**• name:** `String`, file name.<br>**• content:** `String`, content to save.<br><br>Writes a file to the application's `Documents` directory. Returns `true` on success. |
@@ -422,6 +425,31 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 | `sendDeepLink`          | `void`          | `sendDeepLink()`<br><br>Sends the stored Deep Link URL to JavaScript by calling `WUIEnvironment.response()`. Only acts if the page is already loaded. |
 | `readDeepLink`          | `String?`       | `readDeepLink()`<br><br>Returns the last stored Deep Link URL, or `nil` if none is stored. |
 | `clearDeepLink`         | `void`          | `clearDeepLink()`<br><br>Clears the stored Deep Link URL. |
+
+<a name="ios-events"></a>
+
+### iOS Events
+
+Events are callbacks that the native side sends to JavaScript when an asynchronous action completes. Set them on the `WUIEnvironment` instance before loading the first page.
+
+| Event            | Arguments                                        | Description |
+| ---------------- | ------------------------------------------------ | ----------- |
+| `onDownloadFile` | `filename`, `mimetype`, `uri`                    | Fired when a file download initiated from the WebView completes. The file is saved to `Documents/Downloads/` inside the app sandbox and opened via `UIActivityViewController`. Requires iOS 14.5+ for `WKDownloadDelegate`; a `URLSession` fallback is used on earlier versions. |
+| `onReceiveDeepLink` | `url`                                         | Fired when the app receives a Deep Link URL (on launch or while running). |
+
+**Example:**
+
+```javascript
+const env = new WUIEnvironment();
+
+env.onDownloadFile = function(args) {
+    console.log("Downloaded:", args.filename, args.mimetype, args.uri);
+};
+
+env.onReceiveDeepLink = function(url) {
+    console.log("Deep Link received:", url);
+};
+```
 
 <a name="ios-install"></a>
 
@@ -441,11 +469,40 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 #### 2. Swift Class Integration `WUIEnvironment.swift`
 
-Copy the file `src/wui-js/ios/WUIEnvironment.swift` into your Xcode project.
+Copy the file `src/wui-js/environment/ios/WUIEnvironment.swift` into your Xcode project.
+
+> [!NOTE]
+> Add the file to the Xcode target's **Sources** build phase. Do not add it as a bundle resource.
+
+<a name="ios-config-permissions"></a>
+
+#### 3. Permissions Configuration (`Info.plist`)
+
+If your project uses `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), add the required usage description keys directly to the target's build settings:
+
+| Build Setting Key | Required for |
+| --- | --- |
+| `INFOPLIST_KEY_NSLocationWhenInUseUsageDescription` | `getCurrentPosition()` |
+| `INFOPLIST_KEY_NSCameraUsageDescription` | `getPermissionsStatus()` (camera) |
+| `INFOPLIST_KEY_NSContactsUsageDescription` | `getPermissionsStatus()` (contacts) |
+
+> [!WARNING]
+> Without `NSLocationWhenInUseUsageDescription`, iOS silently ignores `requestWhenInUseAuthorization()` — the permission dialog never appears and `getCurrentPosition` never delivers a result.
+
+If your project uses a manual `Info.plist`, add the keys directly to that file:
+
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>Required to obtain the device's current position.</string>
+<key>NSCameraUsageDescription</key>
+<string>Required to check camera permission status.</string>
+<key>NSContactsUsageDescription</key>
+<string>Required to check contacts permission status.</string>
+```
 
 <a name="ios-config-viewcontroller"></a>
 
-#### 3. Initialization in your ViewController `ViewController.swift`
+#### 4. Initialization in your ViewController `ViewController.swift`
 
 ```swift
 class MyViewController: UIViewController {
@@ -472,6 +529,53 @@ class MyViewController: UIViewController {
     }
 }
 ```
+
+<a name="ios-js-usage"></a>
+
+### JavaScript Usage for iOS
+
+All bridge calls on iOS are asynchronous — the native side responds via `WUIEnvironment.response()` after the native operation completes. The JavaScript library abstracts this into Promises:
+
+```javascript
+const env = new WUIEnvironment();
+
+// Set event handlers before loading the first page
+env.onDownloadFile = function(args) {
+    console.log("Downloaded:", args.filename, args.mimetype, args.uri);
+};
+env.onReceiveDeepLink = function(url) {
+    console.log("Deep Link received:", url);
+};
+
+// Use onReady to wait for all initial requests to settle
+env.getDeviceInfo(function(info) {
+    console.log("Platform:", info.platform); // "iOS"
+});
+
+env.getDisplayInfo(function(display) {
+    console.log("Notch:", display.notch);
+    console.log("Status bar height:", display.statusbarHeight);
+});
+
+env.getConnectionStatus(function(connected) {
+    console.log("Connected:", connected);
+});
+
+env.getCurrentPosition(function(position) {
+    if (position.error) {
+        console.error("Location error:", position.error);
+    } else {
+        console.log("Lat:", position.latitude, "Lon:", position.longitude);
+    }
+});
+
+env.onReady(function(count) {
+    console.log("All", count, "requests resolved");
+});
+```
+
+> [!NOTE]
+> When testing `getCurrentPosition` on the iOS Simulator, you must configure a simulated location: **Simulator menu → Features → Location**.
 
 <a name="web"></a>
 

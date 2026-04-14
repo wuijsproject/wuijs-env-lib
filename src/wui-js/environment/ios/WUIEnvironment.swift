@@ -40,6 +40,9 @@ class WUIEnvironment: NSObject {
     private var locationManager: CLLocationManager?
     private var locationCompletion: (([String: Any]) -> Void)?
 
+    // Download tracking (destination URL + mimeType keyed by download identity)
+    private var downloadDestinations: [ObjectIdentifier: (url: URL, mimeType: String)] = [:]
+
     // MARK: - Constructors
 
     init(viewController: UIViewController, developMode: Bool = false) {
@@ -58,11 +61,15 @@ class WUIEnvironment: NSObject {
         let config = WKWebViewConfiguration()
         config.userContentController = contentController
         config.allowsInlineMediaPlayback = true
+        config.allowsAirPlayForMediaPlayback = true
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true
         if #available(iOS 10.0, *) {
             config.mediaTypesRequiringUserActionForPlayback = []
         }
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
+        webView.scrollView.maximumZoomScale = 5.0
+        webView.scrollView.minimumZoomScale = 0.5
         if let vc = viewController {
             vc.view.addSubview(webView)
             webView.translatesAutoresizingMaskIntoConstraints = false
@@ -129,7 +136,8 @@ class WUIEnvironment: NSObject {
 
     func getDisplayInfo() -> [String: Any] {
         var result: [String: Any] = [:]
-        let read: () -> Void = {
+        let read: () -> Void = { [weak self] in
+            guard let self = self else { return }
             let screen = UIScreen.main
             let bounds = screen.bounds
             let scale = screen.scale
@@ -159,6 +167,9 @@ class WUIEnvironment: NSObject {
                     statusbarLightMode = scene.statusBarManager?.statusBarStyle == .darkContent
                 }
             }
+            // Transparent when no opaque overlay is placed over that area by WUIEnvironment
+            let statusbarTransparent = !(self.statusbarView != nil && (self.statusbarView?.backgroundColor?.cgColor.alpha ?? 0) > 0.01)
+            let navigationbarTransparent = !(self.navigationbarView != nil && (self.navigationbarView?.backgroundColor?.cgColor.alpha ?? 0) > 0.01)
             result = [
                 "width":                     width,
                 "height":                    height,
@@ -171,11 +182,11 @@ class WUIEnvironment: NSObject {
                 "statusbarHeight":           statusbarHeight,
                 "navigationbarHeight":       navigationbarHeight,
                 "notch":                     notch,
-                "statusbarTransparent":      true,
+                "statusbarTransparent":      statusbarTransparent,
                 "statusbarLightMode":        statusbarLightMode,
-                "navigationbarTransparent":  true,
-                "navigationbarLightMode":    false,
-                "systembarDrawsBackgrounds": false
+                "navigationbarTransparent":  navigationbarTransparent,
+                "navigationbarLightMode":    false, // iOS home indicator adapts automatically; no programmatic control
+                "systembarDrawsBackgrounds": false  // Android-specific concept; not applicable on iOS
             ]
         }
         Thread.isMainThread ? read() : DispatchQueue.main.sync { read() }
@@ -205,35 +216,35 @@ class WUIEnvironment: NSObject {
 
         // Location (sync)
         switch CLLocationManager.authorizationStatus() {
-			case .authorizedAlways, .authorizedWhenInUse: permissions["location"] = "granted"
-			case .denied, .restricted:                    permissions["location"] = "denied"
-			case .notDetermined:                          permissions["location"] = "default"
-			@unknown default: break
+            case .authorizedAlways, .authorizedWhenInUse: permissions["location"] = "granted"
+            case .denied, .restricted:                    permissions["location"] = "denied"
+            case .notDetermined:                          permissions["location"] = "default"
+            @unknown default: break
         }
 
         // Camera (sync)
         switch AVCaptureDevice.authorizationStatus(for: .video) {
-			case .authorized:            permissions["camera"] = "granted"
-			case .denied, .restricted:   permissions["camera"] = "denied"
-			case .notDetermined:         permissions["camera"] = "default"
-			@unknown default: break
+            case .authorized:            permissions["camera"] = "granted"
+            case .denied, .restricted:   permissions["camera"] = "denied"
+            case .notDetermined:         permissions["camera"] = "default"
+            @unknown default: break
         }
 
         // Contacts (sync)
         switch CNContactStore.authorizationStatus(for: .contacts) {
-			case .authorized:            permissions["contacts"] = "granted"
-			case .denied, .restricted:   permissions["contacts"] = "denied"
-			case .notDetermined:         permissions["contacts"] = "default"
-			@unknown default: break
+            case .authorized:            permissions["contacts"] = "granted"
+            case .denied, .restricted:   permissions["contacts"] = "denied"
+            case .notDetermined:         permissions["contacts"] = "default"
+            @unknown default: break
         }
 
         // Notifications (async — must be last)
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             switch settings.authorizationStatus {
-				case .authorized, .provisional: permissions["notifications"] = "granted"
-				case .denied:                   permissions["notifications"] = "denied"
-				case .notDetermined:            permissions["notifications"] = "default"
-				@unknown default: break
+                case .authorized, .provisional: permissions["notifications"] = "granted"
+                case .denied:                   permissions["notifications"] = "denied"
+                case .notDetermined:            permissions["notifications"] = "default"
+                @unknown default: break
             }
             DispatchQueue.main.async { completion(permissions) }
         }
@@ -266,6 +277,10 @@ class WUIEnvironment: NSObject {
     }
 
     func getConnectionStatus() -> Bool {
+        // currentPath reads the live state synchronously; isConnected is a stale async fallback.
+        if let monitor = networkMonitor {
+            return monitor.currentPath.status == .satisfied
+        }
         return isConnected
     }
 
@@ -434,6 +449,53 @@ class WUIEnvironment: NSObject {
         }
         return UIColor(named: color)
     }
+
+    /// Saves a downloaded file from `tempURL` to Documents/Downloads, avoiding name collisions,
+    /// then fires `onDownloadFile` toward JS and presents the system share sheet.
+    private func saveDownloadedFile(from tempURL: URL, filename: String, mimeType: String) {
+        let fm = FileManager.default
+        guard let dir = fm.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let downloadsDir = dir.appendingPathComponent("Downloads", isDirectory: true)
+        if !fm.fileExists(atPath: downloadsDir.path) {
+            try? fm.createDirectory(at: downloadsDir, withIntermediateDirectories: true)
+        }
+        let nameBase = (filename as NSString).deletingPathExtension
+        let ext = (filename as NSString).pathExtension
+        var destURL = downloadsDir.appendingPathComponent(filename)
+        var version = 1
+        while fm.fileExists(atPath: destURL.path) {
+            let newName = ext.isEmpty ? "\(nameBase) (\(version))" : "\(nameBase) (\(version)).\(ext)"
+            destURL = downloadsDir.appendingPathComponent(newName)
+            version += 1
+        }
+        do {
+            try fm.moveItem(at: tempURL, to: destURL)
+            NSLog("%@ File downloaded: %@", logTag, destURL.path)
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.pushJavascript(arguments: [
+                    "event":    "onDownloadFile",
+                    "filename": destURL.lastPathComponent,
+                    "mimetype": mimeType,
+                    "uri":      destURL.absoluteString
+                ])
+                self.presentShareSheet(for: destURL)
+            }
+        } catch {
+            NSLog("%@ Failed to save downloaded file: %@", logTag, error.localizedDescription)
+        }
+    }
+
+    private func presentShareSheet(for url: URL) {
+        guard let vc = viewController else { return }
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = vc.view
+            popover.sourceRect = CGRect(x: vc.view.bounds.midX, y: vc.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        vc.present(activityVC, animated: true)
+    }
 }
 
 // MARK: - WKScriptMessageHandler
@@ -452,65 +514,65 @@ extension WUIEnvironment: WKScriptMessageHandler {
         }
 
         switch funcName {
-			case "isAppInForeground":
-				push(isAppInForeground())
-			case "getDeviceInfo":
-				push(getDeviceInfo())
-			case "getDisplayInfo":
-				push(getDisplayInfo())
-			case "getAppInfo":
-				push(getAppInfo())
-			case "getPermissionsStatus":
-				// Async: push happens in completion handler
-				getPermissionsStatus { result in push(result) }
-				return
-			case "getCurrentPosition":
-				// Async: push happens in CLLocationManagerDelegate
-				getCurrentPosition { result in push(result) }
-				return
-			case "getConnectionStatus":
-				push(getConnectionStatus())
-			case "setStatusbarStyle":
-				if let color = json["color"] as? String, let darkIcons = json["darkIcons"] as? Bool {
-					setStatusbarStyle(color: color, darkIcons: darkIcons)
-				}
-				push("null")
-			case "setNavigationbarStyle":
-				if let color = json["color"] as? String, let darkIcons = json["darkIcons"] as? Bool {
-					setNavigationbarStyle(color: color, darkIcons: darkIcons)
-				}
-				push("null")
-			case "saveFile":
-				if let name = json["name"] as? String, let content = json["content"] as? String {
-					push(saveFile(name: name, content: content))
-				} else {
-					push(false)
-				}
-			case "readFile":
-				if let name = json["name"] as? String {
-					push(readFile(name: name) as Any)
-				} else {
-					push("")
-				}
-			case "removeFile":
-				if let name = json["name"] as? String {
-					push(removeFile(name: name))
-				} else {
-					push(false)
-				}
-			case "openAppSettings":
-				openAppSettings()
-				push("null")
-			case "openURL":
-				if let url = json["url"] as? String { openURL(url: url) }
-				push("null")
-			case "readDeepLink":
-				push(readDeepLink() as Any)
-			case "clearDeepLink":
-				clearDeepLink()
-				push("null")
-			default:
-				push("")
+            case "isAppInForeground":
+                push(isAppInForeground())
+            case "getDeviceInfo":
+                push(getDeviceInfo())
+            case "getDisplayInfo":
+                push(getDisplayInfo())
+            case "getAppInfo":
+                push(getAppInfo())
+            case "getPermissionsStatus":
+                // Async: push happens in completion handler
+                getPermissionsStatus { result in push(result) }
+                return
+            case "getCurrentPosition":
+                // Async: push happens in CLLocationManagerDelegate
+                getCurrentPosition { result in push(result) }
+                return
+            case "getConnectionStatus":
+                push(getConnectionStatus())
+            case "setStatusbarStyle":
+                if let color = json["color"] as? String, let darkIcons = json["darkIcons"] as? Bool {
+                    setStatusbarStyle(color: color, darkIcons: darkIcons)
+                }
+                push("null")
+            case "setNavigationbarStyle":
+                if let color = json["color"] as? String, let darkIcons = json["darkIcons"] as? Bool {
+                    setNavigationbarStyle(color: color, darkIcons: darkIcons)
+                }
+                push("null")
+            case "saveFile":
+                if let name = json["name"] as? String, let content = json["content"] as? String {
+                    push(saveFile(name: name, content: content))
+                } else {
+                    push(false)
+                }
+            case "readFile":
+                if let name = json["name"] as? String {
+                    push(readFile(name: name) as Any)
+                } else {
+                    push("")
+                }
+            case "removeFile":
+                if let name = json["name"] as? String {
+                    push(removeFile(name: name))
+                } else {
+                    push(false)
+                }
+            case "openAppSettings":
+                openAppSettings()
+                push("null")
+            case "openURL":
+                if let url = json["url"] as? String { openURL(url: url) }
+                push("null")
+            case "readDeepLink":
+                push(readDeepLink() as Any)
+            case "clearDeepLink":
+                clearDeepLink()
+                push("null")
+            default:
+                push("")
         }
     }
 }
@@ -547,6 +609,109 @@ extension WUIEnvironment: WKNavigationDelegate {
             decisionHandler(.allow)
         }
     }
+
+    /// Intercepts responses that should be downloaded rather than rendered.
+    /// Mirrors Android's DownloadListener: fires when MIME type is not natively renderable
+    /// or when the server sets Content-Disposition: attachment.
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        let mimeType = navigationResponse.response.mimeType ?? "application/octet-stream"
+        let renderableMimeTypes: Set<String> = [
+            "text/html", "text/plain", "text/xml", "application/xhtml+xml",
+            "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
+            "application/pdf"
+        ]
+        var shouldDownload = false
+        if let httpResponse = navigationResponse.response as? HTTPURLResponse {
+            let disposition = httpResponse.value(forHTTPHeaderField: "Content-Disposition") ?? ""
+            shouldDownload = disposition.lowercased().contains("attachment") || !renderableMimeTypes.contains(mimeType)
+        } else {
+            shouldDownload = !renderableMimeTypes.contains(mimeType)
+        }
+        guard shouldDownload else {
+            decisionHandler(.allow)
+            return
+        }
+        if #available(iOS 14.5, *) {
+            decisionHandler(.download)
+        } else {
+            // Fallback for iOS < 14.5: download via URLSession
+            if let url = navigationResponse.response.url {
+                let suggestedFilename = navigationResponse.response.suggestedFilename ?? url.lastPathComponent
+                NSLog("%@ Start download (URLSession fallback): %@", logTag, suggestedFilename)
+                URLSession.shared.downloadTask(with: url) { [weak self] tempURL, _, error in
+                    guard let self = self, let tempURL = tempURL else {
+                        NSLog("%@ URLSession download failed: %@", self?.logTag ?? "WUIEnvironment", error?.localizedDescription ?? "unknown")
+                        return
+                    }
+                    self.saveDownloadedFile(from: tempURL, filename: suggestedFilename, mimeType: mimeType)
+                }.resume()
+            }
+            decisionHandler(.cancel)
+        }
+    }
+
+    @available(iOS 14.5, *)
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        download.delegate = self
+    }
+
+    @available(iOS 14.5, *)
+    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+        download.delegate = self
+    }
+}
+
+// MARK: - WKDownloadDelegate
+
+@available(iOS 14.5, *)
+extension WUIEnvironment: WKDownloadDelegate {
+
+    func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
+        let fm = FileManager.default
+        guard let dir = fm.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            completionHandler(nil)
+            return
+        }
+        let downloadsDir = dir.appendingPathComponent("Downloads", isDirectory: true)
+        if !fm.fileExists(atPath: downloadsDir.path) {
+            try? fm.createDirectory(at: downloadsDir, withIntermediateDirectories: true)
+        }
+        let nameBase = (suggestedFilename as NSString).deletingPathExtension
+        let ext = (suggestedFilename as NSString).pathExtension
+        var destURL = downloadsDir.appendingPathComponent(suggestedFilename)
+        var version = 1
+        while fm.fileExists(atPath: destURL.path) {
+            let newName = ext.isEmpty ? "\(nameBase) (\(version))" : "\(nameBase) (\(version)).\(ext)"
+            destURL = downloadsDir.appendingPathComponent(newName)
+            version += 1
+        }
+        NSLog("%@ Download destination: %@", logTag, destURL.path)
+        let mimeType = response.mimeType ?? "application/octet-stream"
+        downloadDestinations[ObjectIdentifier(download)] = (url: destURL, mimeType: mimeType)
+        completionHandler(destURL)
+    }
+
+    func downloadDidFinish(_ download: WKDownload) {
+        let key = ObjectIdentifier(download)
+        guard let info = downloadDestinations[key] else { return }
+        downloadDestinations.removeValue(forKey: key)
+        NSLog("%@ Download finished: %@", logTag, info.url.lastPathComponent)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.pushJavascript(arguments: [
+                "event":    "onDownloadFile",
+                "filename": info.url.lastPathComponent,
+                "mimetype": info.mimeType,
+                "uri":      info.url.absoluteString
+            ])
+            self.presentShareSheet(for: info.url)
+        }
+    }
+
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+        downloadDestinations.removeValue(forKey: ObjectIdentifier(download))
+        NSLog("%@ Download failed: %@", logTag, error.localizedDescription)
+    }
 }
 
 // MARK: - CLLocationManagerDelegate
@@ -580,18 +745,18 @@ extension WUIEnvironment: CLLocationManagerDelegate {
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         switch manager.authorizationStatus {
-			case .authorizedWhenInUse, .authorizedAlways:
-				if CLLocationManager.locationServicesEnabled() {
-					manager.requestLocation()
-				}
-			case .denied, .restricted:
-				DispatchQueue.main.async { [weak self] in
-					self?.locationCompletion?(["error": "Location permission denied"])
-					self?.locationCompletion = nil
-					self?.locationManager = nil
-				}
-			default:
-				break
+            case .authorizedWhenInUse, .authorizedAlways:
+                if CLLocationManager.locationServicesEnabled() {
+                    manager.requestLocation()
+                }
+            case .denied, .restricted:
+                DispatchQueue.main.async { [weak self] in
+                    self?.locationCompletion?(["error": "Location permission denied"])
+                    self?.locationCompletion = nil
+                    self?.locationManager = nil
+                }
+            default:
+                break
         }
     }
 }
