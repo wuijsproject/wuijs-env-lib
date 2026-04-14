@@ -24,18 +24,25 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 	*   [Acerca del Proyecto WUI JS](#project)
 	*   [Mapa de Directorios](#dirmap)
 *   [Implementación en Android](#android)
+	*   [Constructor Java](#android-constructor)
+	*   [Métodos Java](#android-methods)
 	*   [Instalación y Configuración](#android-install)
 		1.   [Clonar la librería](#android-clone)
 		2.   [Configuración del Proyecto](#android-config-project)
 		3.   [Configuración del Módulo](#android-config-module)
 		4.   [Configuración del Manifest](#android-config-manifest)
 		5.   [Configuración de Colores](#android-config-colors)
-		6.   [Integración de la clase Java](#android-config-java)
-		7.   [Integración de la calse JavaScript](#android-config-js)
-		8.   [Inicialización](#android-config-mainactivityactivity)
-	*   [Métodos Java](#android-methods)
+		6.   [Integración de la clase Java](#android-config-wui-environment-java)
+		7.   [Integración de la calse JavaScript](#android-config-wui-environment-js)
+		8.   [Inicialización](#android-config-mainactivity)
 	*   [Uso en JavaScript para Android](#android-js-usage)
 *   [Implementación en iOS](#ios)
+	*   [Constructor Swift](#ios-constructor)
+	*   [Métodos Swift](#ios-methods)
+	*   [Instalación y Configuración](#ios-install)
+		1.   [Clonar la librería](#ios-clone)
+		2.   [Integración de la clase Swift](#ios-config-wui-environment-swift)
+		3.   [Inicialización](#ios-config-viewcontroller)
 *   [Implementación en Web](#web)
 	*   [Métodos JavaScript](#web-methods)
 
@@ -55,9 +62,9 @@ WUI/JS Lib es parte del proyecto WUI JS, que consta actualmente de 3 repositorio
 -	[https://github.com/wui-js/wuijs-main-lib](https://github.com/wui-js/wuijs-main-lib)<br>
 	Librería UI principal.<br><br>
 -	[https://github.com/wui-js/wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib)<br>
-	Complementos de la librería UI principal.<br><br>
+	Librería de complementos UI.<br><br>
 -	[https://github.com/wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib)<br>
-	Puente entre entornos web y motores de renderizado web nativos mediante JavaScript.<br><br>
+	Librería puente entre entornos web y motores de renderizado web nativos mediante JavaScript.<br><br>
 -	[https://github.com/wui-js/wuijs-lab](https://github.com/wui-js/wuijs-lab)<br>
 	Repositorio con demos y ejemplos de uso tanto de las clases de la librería UI principal como de los complementos.<br><br>
 
@@ -101,6 +108,39 @@ wuijs-environment-lib/
 ## Implementación en Android
 
 La implementación en Android utiliza como motor de renderización WebView.
+
+<a name="android-constructor"></a>
+
+### Constructor Java
+
+| Constructor | Descripción |
+| ----------- | ----------- |
+| `WUIEnvironment(Context context[, boolean developMode])` | Inicializa el entorno WUI con configuración por defecto. `developMode = true` permite SSL con certificados no confiables y activa logs de depuración. |
+
+<a name="android-methods"></a>
+
+### Métodos Java
+
+| Método                  | Tipo de retorno | Descripción |
+| ----------------------- | --------------- | ----------- |
+| `isAppInForeground`     | `boolean`       | `isAppInForeground()`<br><br>Verifica si la aplicación está actualmente en primer plano. |
+| `getDeviceInfo`         | `JSONObject`    | `getDeviceInfo()`<br><br>Devuelve información de hardware del dispositivo: `id`, `uuid`, `name`, `platform`, `version`, `maker`, `model`. |
+| `getDisplayInfo`        | `JSONObject`    | `getDisplayInfo()`<br><br>Devuelve métricas de pantalla: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch` y flags de estilo de barras del sistema. |
+| `getAppInfo`            | `JSONObject`    | `getAppInfo()`<br><br>Devuelve metadatos de la aplicación: `name`, `version`, `package`, `build`. |
+| `getPermissionsStatus`  | `JSONObject`    | `getPermissionsStatus()`<br><br>Verifica el estado de los permisos del sistema: `phone`, `location`, `storage`, `contacts`, `camera`, `notifications`. Valores posibles: `granted`, `denied`, `default`. |
+| `getCurrentPosition`    | `JSONObject`    | `getCurrentPosition()`<br><br>Obtiene las coordenadas actuales GPS/Red: `latitude`, `longitude`, `accuracy`, `provider`, `timestamp`. Solicita el permiso de ubicación si no ha sido otorgado. |
+| `getConnectionStatus`   | `boolean`       | `getConnectionStatus()`<br><br>Verifica si hay una conexión a internet activa (WiFi, datos móviles o Ethernet). |
+| `setStatusbarStyle`     | `void`          | `setStatusbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o clave de `colors.xml` (`statusbarLightColor`, `statusbarDarkColor`, etc.).<br>**• darkIcons:** `boolean`, `true` para iconos oscuros, `false` para claros.<br><br>Actualiza el color y el estilo de iconos de la barra de estado. |
+| `setNavigationbarStyle` | `void`          | `setNavigationbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o clave de `colors.xml` (`navigationbarLightColor`, `navigationbarDarkColor`, etc.).<br>**• darkIcons:** `boolean`, `true` para iconos oscuros, `false` para claros.<br><br>Actualiza el color y el estilo de iconos de la barra de navegación. |
+| `saveFile`              | `boolean`       | `saveFile(name, content)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br>**• content:** `String`, contenido a guardar.<br><br>Escribe un archivo en el almacenamiento interno privado de la aplicación. Devuelve `true` si tuvo éxito. |
+| `readFile`              | `String`        | `readFile(name)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br><br>Lee un archivo del almacenamiento interno. Devuelve `null` si no existe o hay error. |
+| `removeFile`            | `boolean`       | `removeFile(name)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br><br>Elimina un archivo del almacenamiento interno. Devuelve `true` si tuvo éxito. |
+| `openAppSettings`       | `void`          | `openAppSettings()`<br><br>Abre la pantalla de configuración de la aplicación en Ajustes del sistema. |
+| `openURL`               | `void`          | `openURL(url)`<br><br>Argumentos:<br>**• url:** `String`, URL de destino o ruta de asset local (`file:///android_asset/...`).<br><br>Carga un asset local en el WebView o abre una URL externa mediante el Intent del sistema. |
+| `saveDeepLink`          | `void`          | `saveDeepLink(intent)`<br><br>Argumentos:<br>**• intent:** `Intent`, intent recibido en `onCreate` u `onNewIntent`.<br><br>Extrae y almacena la URL del Deep Link del intent. Si la página ya está cargada, la envía inmediatamente al JavaScript. |
+| `sendDeepLink`          | `void`          | `sendDeepLink()`<br><br>Envía la URL de Deep Link almacenada al JavaScript llamando a `WUIEnvironment.response()`. Solo actúa si la página ya está cargada. |
+| `readDeepLink`          | `String`        | `readDeepLink()`<br><br>Devuelve la última URL de Deep Link almacenada, o `null` si no hay ninguna. |
+| `clearDeepLink`         | `void`          | `clearDeepLink()`<br><br>Elimina la URL de Deep Link almacenada. |
 
 <a name="android-install"></a>
 
@@ -257,20 +297,20 @@ La librería utiliza estas llaves para el estilo de las barras de estado y naveg
 > [!WARNING]
 > Se deben definir todas las llaves para que la clase Java no arroje error.
 
-<a name="android-config-java"></a>
+<a name="android-config-wui-environment-java"></a>
 
 #### 6. Integración de la clase Java `WUIEnvironment.java`
 
-Copiar el archivo `src/wui-js/environment/android/WUIEnvironment.java` a la carpeta de fuentes de tu proyecto (ej: `app/src/main/java/com/tu/paquete/` si el ID del paquete definido fuese `com.tu.paquete`).
+Copiar el archivo `src/wui-js/environment/android/WUIEnvironment.java` a la carpeta de fuentes de tu proyecto (ej: `app/src/main/java/your/package/name/` si el ID del paquete definido fuese `your.package.name`).
 
 > [!IMPORTANT]
 > Debes editar la primera línea del archivo para que coincida con el ID del paquete de la aplicación:
 
 ```java
-package com.tu.paquete; // Cambia esto por el ID de paquete de tu proyecto
+package YOUR.PACKAGE.NAME; // Update this to match your project package
 ```
 
-<a name="android-config-js"></a>
+<a name="android-config-wui-environment-js"></a>
 
 #### 7. Integración de la calse JavaScript `wui-environment-0.1.js`
 
@@ -321,37 +361,6 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 
-<a name="android-methods"></a>
-
-### Constructor Java
-
-| Constructor | Descripción |
-| ----------- | ----------- |
-| `WUIEnvironment(Context context[, boolean developMode])` | Inicializa el entorno WUI con configuración por defecto. `developMode = true` permite SSL con certificados no confiables y activa logs de depuración. |
-
-### Métodos Java
-
-| Método                  | Tipo de retorno | Descripción |
-| ----------------------- | --------------- | ----------- |
-| `isAppInForeground`     | `boolean`       | `isAppInForeground()`<br><br>Verifica si la aplicación está actualmente en primer plano. |
-| `getDeviceInfo`         | `JSONObject`    | `getDeviceInfo()`<br><br>Devuelve información de hardware del dispositivo: `id`, `uuid`, `name`, `platform`, `version`, `maker`, `model`. |
-| `getDisplayInfo`        | `JSONObject`    | `getDisplayInfo()`<br><br>Devuelve métricas de pantalla: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch` y flags de estilo de barras del sistema. |
-| `getAppInfo`            | `JSONObject`    | `getAppInfo()`<br><br>Devuelve metadatos de la aplicación: `name`, `version`, `package`, `build`. |
-| `getPermissionsStatus`  | `JSONObject`    | `getPermissionsStatus()`<br><br>Verifica el estado de los permisos del sistema: `phone`, `location`, `storage`, `contacts`, `camera`, `notifications`. Valores posibles: `granted`, `denied`, `default`. |
-| `getCurrentPosition`    | `JSONObject`    | `getCurrentPosition()`<br><br>Obtiene las coordenadas actuales GPS/Red: `latitude`, `longitude`, `accuracy`, `provider`, `timestamp`. Solicita el permiso de ubicación si no ha sido otorgado. |
-| `getConnectionStatus`   | `boolean`       | `getConnectionStatus()`<br><br>Verifica si hay una conexión a internet activa (WiFi, datos móviles o Ethernet). |
-| `setStatusbarStyle`     | `void`          | `setStatusbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o clave de `colors.xml` (`statusbarLightColor`, `statusbarDarkColor`, etc.).<br>**• darkIcons:** `boolean`, `true` para iconos oscuros, `false` para claros.<br><br>Actualiza el color y el estilo de iconos de la barra de estado. |
-| `setNavigationbarStyle` | `void`          | `setNavigationbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o clave de `colors.xml` (`navigationbarLightColor`, `navigationbarDarkColor`, etc.).<br>**• darkIcons:** `boolean`, `true` para iconos oscuros, `false` para claros.<br><br>Actualiza el color y el estilo de iconos de la barra de navegación. |
-| `saveFile`              | `boolean`       | `saveFile(name, content)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br>**• content:** `String`, contenido a guardar.<br><br>Escribe un archivo en el almacenamiento interno privado de la aplicación. Devuelve `true` si tuvo éxito. |
-| `readFile`              | `String`        | `readFile(name)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br><br>Lee un archivo del almacenamiento interno. Devuelve `null` si no existe o hay error. |
-| `removeFile`            | `boolean`       | `removeFile(name)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br><br>Elimina un archivo del almacenamiento interno. Devuelve `true` si tuvo éxito. |
-| `openAppSettings`       | `void`          | `openAppSettings()`<br><br>Abre la pantalla de configuración de la aplicación en Ajustes del sistema. |
-| `openURL`               | `void`          | `openURL(url)`<br><br>Argumentos:<br>**• url:** `String`, URL de destino o ruta de asset local (`file:///android_asset/...`).<br><br>Carga un asset local en el WebView o abre una URL externa mediante el Intent del sistema. |
-| `saveDeepLink`          | `void`          | `saveDeepLink(intent)`<br><br>Argumentos:<br>**• intent:** `Intent`, intent recibido en `onCreate` u `onNewIntent`.<br><br>Extrae y almacena la URL del Deep Link del intent. Si la página ya está cargada, la envía inmediatamente al JavaScript. |
-| `sendDeepLink`          | `void`          | `sendDeepLink()`<br><br>Envía la URL de Deep Link almacenada al JavaScript llamando a `WUIEnvironment.response()`. Solo actúa si la página ya está cargada. |
-| `readDeepLink`          | `String`        | `readDeepLink()`<br><br>Devuelve la última URL de Deep Link almacenada, o `null` si no hay ninguna. |
-| `clearDeepLink`         | `void`          | `clearDeepLink()`<br><br>Elimina la URL de Deep Link almacenada. |
-
 <a name="android-js-usage"></a>
 
 ### Uso en JavaScript para Android
@@ -381,53 +390,15 @@ WUIEnvironment.response = function(args) {
 
 La implementación en iOS utiliza como motor de renderización WebKit (WKWebView) y se comunica mediante `WKScriptMessageHandler`.
 
-### Instalación y Configuración
-
-#### 1. Clonar la librería
-
-Si aún no lo has hecho, clona el repositorio desde GitHub:
-
-```bash
-git clone https://github.com/wui-is/wuijs-environment-lib.git
-```
-
-#### 2. Integración de la clase Swift `WUIEnvironment.swift`
-
-Copia el archivo `src/wui-js/ios/WUIEnvironment.swift` en tu proyecto Xcode.
-
-#### 3. Inicialización en tu ViewController
-
-```swift
-class MyViewController: UIViewController {
-    private var wuiEnvironment: WUIEnvironment?
-
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        return wuiEnvironment?.preferredStatusBarStyle ?? .default
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        wuiEnvironment = WUIEnvironment(viewController: self)
-        // Carga página demo
-        // Comenta la siguiente línea después de validar la prueba
-        wuiEnvironment?.openURL("file:///\(Bundle.main.bundlePath)/assets/wui-js/environment/demo/index.html")
-        // Carga página inicial
-        // Descomenta la siguiente línea después de validar la prueba
-        // wuiEnvironment?.openURL("file:///\(Bundle.main.bundlePath)/assets/pages/index.html")
-    }
-
-    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
-        // Habilitar peticiones Deep Link durante la ejecución de la app
-        wuiEnvironment?.saveDeepLink(url: contexts.first?.url)
-    }
-}
-```
+<a name="ios-constructor"></a>
 
 ### Constructor Swift
 
 | Constructor | Descripción |
 | ----------- | ----------- |
 | `WUIEnvironment(viewController: UIViewController[, developMode: Bool])` | Inicializa el entorno WUI. `developMode = true` permite SSL con certificados no confiables y activa logs de depuración. |
+
+<a name="ios-methods"></a>
 
 ### Métodos Swift
 
@@ -451,6 +422,56 @@ class MyViewController: UIViewController {
 | `sendDeepLink`          | `void`          | `sendDeepLink()`<br><br>Envía la URL de Deep Link almacenada al JavaScript llamando a `WUIEnvironment.response()`. Solo actúa si la página ya está cargada. |
 | `readDeepLink`          | `String?`       | `readDeepLink()`<br><br>Devuelve la última URL de Deep Link almacenada, o `nil` si no hay ninguna. |
 | `clearDeepLink`         | `void`          | `clearDeepLink()`<br><br>Elimina la URL de Deep Link almacenada. |
+
+<a name="ios-install"></a>
+
+### Instalación y Configuración
+
+<a name="ios-clone"></a>
+
+#### 1. Clonar la librería
+
+Si aún no lo has hecho, clona el repositorio desde GitHub:
+
+```bash
+git clone https://github.com/wui-is/wuijs-environment-lib.git
+```
+
+<a name="ios-config-wui-environment-swift"></a>
+
+#### 2. Integración de la clase Swift `WUIEnvironment.swift`
+
+Copia el archivo `src/wui-js/ios/WUIEnvironment.swift` en tu proyecto Xcode.
+
+<a name="ios-config-viewcontroller">
+
+#### 3. Inicialización en tu ViewController `ContentView.swift`
+
+```swift
+class MyViewController: UIViewController {
+    private var wuiEnvironment: WUIEnvironment?
+
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return wuiEnvironment?.preferredStatusBarStyle ?? .default
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        wuiEnvironment = WUIEnvironment(viewController: self)
+        // Carga página demo
+        // Comenta la siguiente línea después de validar la prueba
+        wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/wui-js/environment/demo/index.html")
+        // Carga página inicial
+        // Descomenta la siguiente línea después de validar la prueba
+        // wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/pages/index.html")
+    }
+
+    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+        // Habilitar peticiones Deep Link durante la ejecución de la app
+        wuiEnvironment?.saveDeepLink(url: contexts.first?.url)
+    }
+}
+```
 
 <a name="web"></a>
 

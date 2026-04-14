@@ -1,10 +1,10 @@
-/*
- * @file WUIEnvironment.swift
- * @class WUIEnvironment
- * @version 0.1
- * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
- * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
- */
+//
+//  File: WUIEnvironment.swift
+//  Class: WUIEnvironment
+//  Version: 0.1
+//  Author: Sergio E. Belmar V. (wuijs.project@gmail.com)
+//  Copyright: Sergio E. Belmar V. (wuijs.project@gmail.com)
+//
 
 import Foundation
 import WebKit

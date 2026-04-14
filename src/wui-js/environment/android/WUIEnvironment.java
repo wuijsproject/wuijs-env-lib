@@ -6,7 +6,7 @@
  * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
  */
 
-package YOUR_PACKAGE_NAME; // Update this to match your project package
+package YOUR.PACKAGE.NAME; // Update this to match your project package
 
 import android.Manifest;
 import android.annotation.SuppressLint;
