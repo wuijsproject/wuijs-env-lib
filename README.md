@@ -60,7 +60,7 @@ It is currently available for Android in Java via WebView and for iOS in Swift v
 
 ### About the WUI/JS Project
 
-WUI/JS Environment Lib is part of the WUI/JS project, which currently consists of 3 repositories:
+WUI/JS Environment Lib is part of the WUI/JS project, which currently consists of 4 repositories:
 
 -	[https://github.com/wui-js/wuijs-main-lib](https://github.com/wui-js/wuijs-main-lib)<br>
 	Main UI library.<br><br>
