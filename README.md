@@ -67,9 +67,9 @@ WUI/JS Environment Lib is part of the WUI/JS project, which currently consists o
 -	[https://github.com/wui-js/wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib)<br>
 	UI plugins library.<br><br>
 -	[https://github.com/wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib)<br>
-	Bridge library between a web environments and native web rendering engines using JavaScript.<br><br>
+	Bridge library between a web environments and native web rendering engines.<br><br>
 -	[https://github.com/wui-js/wuijs-lab](https://github.com/wui-js/wuijs-lab)<br>
-	Repository with demos and usage examples for both the main UI library classes and the plugins.<br><br>
+	Repository with demos and usage examples for the project libraries.<br><br>
 
 <a name="dirmap"></a>
 
