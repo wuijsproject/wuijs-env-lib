@@ -60,7 +60,7 @@ Actualmente está disponible para Android en Java mediante WebView y para iOS en
 
 ### Acerca del Proyecto WUI/JS
 
-WUI/JS Main Lib es parte del proyecto WUI/JS, que consta actualmente de 3 repositorios:
+WUI/JS Environment Lib es parte del proyecto WUI/JS, que consta actualmente de 3 repositorios:
 
 -	[https://github.com/wui-js/wuijs-main-lib](https://github.com/wui-js/wuijs-main-lib)<br>
 	Librería UI principal.<br><br>
