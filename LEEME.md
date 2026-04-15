@@ -302,12 +302,12 @@ La librería utiliza estas llaves para el estilo de las barras de estado y naveg
     <color name="white">#FFFFFFFF</color>
     <color name="statusbarLightColor">#f5f5f5</color>
     <color name="statusbarLightOverlayColor">#c2c2c2</color>
-    <color name="statusbarDarkColor">#226d79</color>
-    <color name="statusbarDarkOverlayColor">#1c5863</color>
+    <color name="statusbarDarkColor">#212121</color>
+    <color name="statusbarDarkOverlayColor">#616161</color>
     <color name="navigationbarLightColor">#efeff6</color>
     <color name="navigationbarLightOverlayColor">#c0c0c6</color>
-    <color name="navigationbarDarkColor">#226d79</color>
-    <color name="navigationbarDarkOverlayColor">#1c5863</color>
+    <color name="navigationbarDarkColor">#212121</color>
+    <color name="navigationbarDarkOverlayColor">#616161</color>
 </resources>
 ```
 
@@ -482,20 +482,20 @@ Si el proyecto utiliza un `Info.plist` manual, agregar las claves directamente e
 
 <a name="ios-config-colors"></a>
 
-#### 3. Configuración de Colores (`Assets.xcassets`)
+#### 3. Configuración de Colores en `Assets.xcassets`
 
-La librería resuelve los colores nombrados del status bar y navigation bar mediante `UIColor(named:)` desde el asset catalog de la app. Agregar los siguientes color sets al `Assets.xcassets` del proyecto:
+La librería utiliza estos nombres de color set para el estilo de las barras de estado y navegación:
 
-| Nombre del Color Set | Valor por Defecto | Usado en |
-| --- | --- | --- |
-| `statusbarLightColor` | `#f5f5f5` | `setStatusbarStyle` |
-| `statusbarLightOverlayColor` | `#c2c2c2` | `setStatusbarStyle` |
-| `statusbarDarkColor` | `#226d79` | `setStatusbarStyle` |
-| `statusbarDarkOverlayColor` | `#1c5863` | `setStatusbarStyle` |
-| `navigationbarLightColor` | `#efeff6` | `setNavigationbarStyle` |
-| `navigationbarLightOverlayColor` | `#c0c0c6` | `setNavigationbarStyle` |
-| `navigationbarDarkColor` | `#226d79` | `setNavigationbarStyle` |
-| `navigationbarDarkOverlayColor` | `#1c5863` | `setNavigationbarStyle` |
+| Nombre del Color Set             | Valor por Defecto |
+| -------------------------------- | ----------------- |
+| `statusbarLightColor`            | `#f5f5f5` |
+| `statusbarLightOverlayColor`     | `#c2c2c2` |
+| `statusbarDarkColor`             | `#212121` |
+| `statusbarDarkOverlayColor`      | `#616161` |
+| `navigationbarLightColor`        | `#efeff6` |
+| `navigationbarLightOverlayColor` | `#c0c0c6` |
+| `navigationbarDarkColor`         | `#212121` |
+| `navigationbarDarkOverlayColor`  | `#616161` |
 
 Para agregar un color set en Xcode: abrir `Assets.xcassets`, hacer clic en **+** → **Color Set**, nombrarlo exactamente como se indica y definir el valor de color en el Attributes Inspector.
 

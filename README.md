@@ -302,12 +302,12 @@ The library uses these keys for the status and navigation bar styles:
     <color name="white">#FFFFFFFF</color>
     <color name="statusbarLightColor">#f5f5f5</color>
     <color name="statusbarLightOverlayColor">#c2c2c2</color>
-    <color name="statusbarDarkColor">#226d79</color>
-    <color name="statusbarDarkOverlayColor">#1c5863</color>
+    <color name="statusbarDarkColor">#212121</color>
+    <color name="statusbarDarkOverlayColor">#616161</color>
     <color name="navigationbarLightColor">#efeff6</color>
     <color name="navigationbarLightOverlayColor">#c0c0c6</color>
-    <color name="navigationbarDarkColor">#226d79</color>
-    <color name="navigationbarDarkOverlayColor">#1c5863</color>
+    <color name="navigationbarDarkColor">#212121</color>
+    <color name="navigationbarDarkOverlayColor">#616161</color>
 </resources>
 ```
 
@@ -395,7 +395,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 
 <a name="ios-constructor"></a>
 
-### Swift Constructors
+### Swift Constructor
 
 | Constructor | Description |
 | ----------- | ----------- |
@@ -430,7 +430,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 
 ### iOS Events
 
-Events are callbacks that the native side sends to JavaScript when an asynchronous action completes. Set them on the `WUIEnvironment` instance before loading the first page.
+Events are callbacks that the native side sends to JavaScript when an asynchronous action completes. They must be configured on the `WUIEnvironment` instance before loading the first page.
 
 | Event               | Arguments                     | Description |
 | ------------------- | ----------------------------- | ----------- |
@@ -482,20 +482,20 @@ If the project uses a manual `Info.plist`, add the keys directly to that file:
 
 <a name="ios-config-colors"></a>
 
-#### 3. Colors Configuration (`Assets.xcassets`)
+#### 3. Colors Configuration in `Assets.xcassets`
 
-The library resolves named status and navigation bar colors via `UIColor(named:)` from the app's asset catalog. Add the following color sets to the project's `Assets.xcassets`:
+The library uses these color set names for the status and navigation bar styles:
 
-| Color Set Name | Default Value | Used in |
-| --- | --- | --- |
-| `statusbarLightColor` | `#f5f5f5` | `setStatusbarStyle` |
-| `statusbarLightOverlayColor` | `#c2c2c2` | `setStatusbarStyle` |
-| `statusbarDarkColor` | `#226d79` | `setStatusbarStyle` |
-| `statusbarDarkOverlayColor` | `#1c5863` | `setStatusbarStyle` |
-| `navigationbarLightColor` | `#efeff6` | `setNavigationbarStyle` |
-| `navigationbarLightOverlayColor` | `#c0c0c6` | `setNavigationbarStyle` |
-| `navigationbarDarkColor` | `#226d79` | `setNavigationbarStyle` |
-| `navigationbarDarkOverlayColor` | `#1c5863` | `setNavigationbarStyle` |
+| Color Set Name                   | Default Value |
+| -------------------------------- | ------------- |
+| `statusbarLightColor`            | `#f5f5f5` |
+| `statusbarLightOverlayColor`     | `#c2c2c2` |
+| `statusbarDarkColor`             | `#212121` |
+| `statusbarDarkOverlayColor`      | `#616161` |
+| `navigationbarLightColor`        | `#efeff6` |
+| `navigationbarLightOverlayColor` | `#c0c0c6` |
+| `navigationbarDarkColor`         | `#212121` |
+| `navigationbarDarkOverlayColor`  | `#616161` |
 
 To add a color set in Xcode: open `Assets.xcassets`, click **+** → **Color Set**, name it exactly as shown, and set the color value in the Attributes Inspector.
 
