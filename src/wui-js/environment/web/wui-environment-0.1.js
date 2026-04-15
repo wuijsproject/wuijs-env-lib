@@ -118,9 +118,12 @@ class WUIEnvironment {
 				const check = setInterval(() => {
 					if (this.#responses[code] !== null) {
 						clearInterval(check);
-						const response = this.#responses[code];
+						let response = this.#responses[code];
 						delete this.#responses[code];
 						this.#resCount++;
+						if (options.func == "readFile" && options.name && options.name.match(/\.json$/i) && typeof response === "string") {
+							try { response = JSON.parse(response || "{}"); } catch (e) {}
+						}
 						resolve(response);
 					}
 				}, this.#checkInterval);

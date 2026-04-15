@@ -43,10 +43,11 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 	*   [Instalación y Configuración](#ios-install)
 		1.   [Clonar la librería](#ios-clone)
 		2.   [Configuración de Permisos](#ios-config-permissions)
-		3.   [Integración de la clase Swift](#ios-config-wui-environment-swift)
-		4.   [Integración de la calse JavaScript](#ios-config-wui-environment-js)
-		5.   [Inicialización del PackageApp](#ios-config-packageapp)
-		6.   [Inicialización del MainView](#ios-config-mainview)
+		3.   [Configuración de Colores](#ios-config-colors)
+		4.   [Integración de la clase Swift](#ios-config-wui-environment-swift)
+		5.   [Integración de la clase JavaScript](#ios-config-wui-environment-js)
+		6.   [Inicialización del PackageApp](#ios-config-packageapp)
+		7.   [Inicialización del MainView](#ios-config-mainview)
 *   [Implementación en Web](#web)
 	*   [Métodos JavaScript](#web-methods)
 	*   [Uso JavaScript](#web-js-usage)
@@ -413,8 +414,8 @@ La implementación en iOS utiliza como motor de renderización WebKit (WKWebView
 | `getPermissionsStatus`  | `void`          | `getPermissionsStatus(completion)`<br><br>Argumentos:<br>**• completion:** `([String: Any]) -> Void`, callback con el resultado.<br><br>Verifica el estado de los permisos del sistema: `location`, `camera`, `contacts`, `notifications`. Valores posibles: `granted`, `denied`, `default`, `undefined`. Las llaves `phone` y `storage` son siempre `undefined` (sin permiso de sistema equivalente en iOS). Async — entrega el resultado en el main thread. |
 | `getCurrentPosition`    | `void`          | `getCurrentPosition(completion)`<br><br>Argumentos:<br>**• completion:** `([String: Any]) -> Void`, callback con el resultado.<br><br>Obtiene las coordenadas GPS actuales: `latitude`, `longitude`, `accuracy`, `provider`, `timestamp`. Solicita el permiso de ubicación si no ha sido otorgado. Async — entrega el resultado vía `CLLocationManagerDelegate`.<br><br>> **Requiere** `NSLocationWhenInUseUsageDescription` en `Info.plist`. Sin esta clave iOS ignora silenciosamente la solicitud de permiso. |
 | `getConnectionStatus`   | `Bool`          | `getConnectionStatus()`<br><br>Verifica si hay una conexión a internet activa. Lee el estado actual de la red de forma sincrónica mediante `NWPathMonitor.currentPath`; el `pathUpdateHandler` interno mantiene el estado en caché actualizado para llamadas posteriores. |
-| `setStatusbarStyle`     | `void`          | `setStatusbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o nombre de color del asset catalog.<br>**• darkIcons:** `Bool`, `true` para iconos oscuros, `false` para claros.<br><br>Coloca una UIView con el color indicado sobre el área del status bar. El estilo de iconos se aplica vía `preferredStatusBarStyle` — el host ViewController debe exponer esta propiedad y llamar a `setNeedsStatusBarAppearanceUpdate()`. |
-| `setNavigationbarStyle` | `void`          | `setNavigationbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o nombre de color del asset catalog.<br>**• darkIcons:** `Bool`, ignorado en iOS (el home indicator no es configurable).<br><br>Coloca una UIView con el color indicado sobre el área `safeAreaInsets.bottom`. Sin efecto en dispositivos con botón de inicio. |
+| `setStatusbarStyle`     | `void`          | `setStatusbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o nombre de color set en `Assets.xcassets` (`statusbarLightColor`, `statusbarDarkColor`, etc.).<br>**• darkIcons:** `Bool`, `true` para iconos oscuros, `false` para claros.<br><br>Coloca una UIView con el color indicado sobre el área del status bar. El estilo de iconos se aplica vía `preferredStatusBarStyle` — el host ViewController debe exponer esta propiedad y llamar a `setNeedsStatusBarAppearanceUpdate()`. |
+| `setNavigationbarStyle` | `void`          | `setNavigationbarStyle(color, darkIcons)`<br><br>Argumentos:<br>**• color:** `String`, color HEX (`#RRGGBB`) o nombre de color set en `Assets.xcassets` (`navigationbarLightColor`, `navigationbarDarkColor`, etc.).<br>**• darkIcons:** `Bool`, ignorado en iOS (el home indicator no es configurable).<br><br>Coloca una UIView con el color indicado sobre el área `safeAreaInsets.bottom`. Sin efecto en dispositivos con botón de inicio. |
 | `saveFile`              | `Bool`          | `saveFile(name, content)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br>**• content:** `String`, contenido a guardar.<br><br>Escribe un archivo en el directorio `Documents` de la aplicación. Devuelve `true` si tuvo éxito. |
 | `readFile`              | `String?`       | `readFile(name)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br><br>Lee un archivo del directorio `Documents`. Devuelve `nil` si no existe o hay error. |
 | `removeFile`            | `Bool`          | `removeFile(name)`<br><br>Argumentos:<br>**• name:** `String`, nombre del archivo.<br><br>Elimina un archivo del directorio `Documents`. Devuelve `true` si tuvo éxito. |
@@ -479,9 +480,31 @@ Si el proyecto utiliza un `Info.plist` manual, agregar las claves directamente e
 <string>Requerido para verificar el estado del permiso de contactos.</string>
 ```
 
+<a name="ios-config-colors"></a>
+
+#### 3. Configuración de Colores (`Assets.xcassets`)
+
+La librería resuelve los colores nombrados del status bar y navigation bar mediante `UIColor(named:)` desde el asset catalog de la app. Agregar los siguientes color sets al `Assets.xcassets` del proyecto:
+
+| Nombre del Color Set | Valor por Defecto | Usado en |
+| --- | --- | --- |
+| `statusbarLightColor` | `#f5f5f5` | `setStatusbarStyle` |
+| `statusbarLightOverlayColor` | `#c2c2c2` | `setStatusbarStyle` |
+| `statusbarDarkColor` | `#226d79` | `setStatusbarStyle` |
+| `statusbarDarkOverlayColor` | `#1c5863` | `setStatusbarStyle` |
+| `navigationbarLightColor` | `#efeff6` | `setNavigationbarStyle` |
+| `navigationbarLightOverlayColor` | `#c0c0c6` | `setNavigationbarStyle` |
+| `navigationbarDarkColor` | `#226d79` | `setNavigationbarStyle` |
+| `navigationbarDarkOverlayColor` | `#1c5863` | `setNavigationbarStyle` |
+
+Para agregar un color set en Xcode: abrir `Assets.xcassets`, hacer clic en **+** → **Color Set**, nombrarlo exactamente como se indica y definir el valor de color en el Attributes Inspector.
+
+> [!WARNING]
+> Todos los color sets utilizados por la aplicación deben estar definidos. Si un color nombrado no se encuentra en `Assets.xcassets`, `UIColor(named:)` devuelve `nil` y la barra afectada usará blanco por defecto.
+
 <a name="ios-config-wui-environment-swift"></a>
 
-#### 3. Integración de la clase Swift `WUIEnvironment.swift`
+#### 4. Integración de la clase Swift `WUIEnvironment.swift`
 
 Copiar el archivo `src/wui-js/environment/ios/WUIEnvironment.swift` en el proyecto Xcode.
 
@@ -490,7 +513,7 @@ Copiar el archivo `src/wui-js/environment/ios/WUIEnvironment.swift` en el proyec
 
 <a name="ios-config-wui-environment-js"></a>
 
-#### 4. Integración de la calse JavaScript `wui-environment-0.1.js`
+#### 5. Integración de la clase JavaScript `wui-environment-0.1.js`
 
 Copiar el contenido del directorio `src/wui-js/environment/web/` al directorio `assets/` del proyecto en Xcode. Se recomienda la siguiente estructura:
 
@@ -501,7 +524,7 @@ Lo anterior asegura que los ejemplos de inicialización funcionen correctamente.
 
 <a name="ios-config-packageapp"></a>
 
-#### 5. Inicialización del PackageApp `packageApp.swift`
+#### 6. Inicialización del PackageApp `packageApp.swift`
 
 El nombre del archivo `packageApp.swift` cambia dependiendo del nombre del paquete que se asignó al proyecto.
 
@@ -520,7 +543,7 @@ struct packageApp: App {
 
 <a name="ios-config-mainview"></a>
 
-#### 6. Inicialización del MainView `MainView.swift`
+#### 7. Inicialización del MainView `MainView.swift`
 
 El nombre del archivo `MainView.swift` es opcoinal, no obstante, debe se coherente con el nombre de la función llamada desde `packageApp.swift`.
 
@@ -605,7 +628,8 @@ class EnvironmentViewController: UIViewController {
 
 ### Uso JavaScript
 
-Todas las llamadas al bridge en iOS son asíncronas — el lado nativo responde mediante `WUIEnvironment.response()` una vez completada la operación. La librería JavaScript abstrae esto en Promises:
+Todas las llamadas al bridge en iOS son asíncronas — el lado nativo responde mediante `WUIEnvironment.response()` una vez completada la operación.
+La librería JavaScript abstrae esto en Promises:
 
 ```javascript
 const env = new WUIEnvironment();

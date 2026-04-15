@@ -43,7 +43,7 @@ class WUIEnvironment: NSObject {
     // Download tracking (destination URL + mimeType keyed by download identity)
     private var downloadDestinations: [ObjectIdentifier: (url: URL, mimeType: String)] = [:]
 
-    // MARK: - Constructors
+    // MARK: - Constructor
 
     init(viewController: UIViewController, developMode: Bool = false) {
         super.init()
@@ -68,6 +68,7 @@ class WUIEnvironment: NSObject {
         }
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
+        webView.uiDelegate = self
         webView.scrollView.maximumZoomScale = 5.0
         webView.scrollView.minimumZoomScale = 0.5
         if let vc = viewController {
@@ -306,6 +307,11 @@ class WUIEnvironment: NSObject {
             self.statusbarView = view
             self.preferredStatusBarStyle = darkIcons ? .darkContent : .lightContent
             vc.setNeedsStatusBarAppearanceUpdate()
+            // In SwiftUI apps UIHostingController doesn't forward childForStatusBarStyle,
+            // so propagate icon style via window overrideUserInterfaceStyle as fallback.
+            if let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) {
+                window.overrideUserInterfaceStyle = darkIcons ? .light : .dark
+            }
             NSLog("%@ Statusbar set color: %@, darkIcons: %@", self.logTag, color, darkIcons ? "true" : "false")
         }
     }
@@ -447,6 +453,8 @@ class WUIEnvironment: NSObject {
                 alpha: CGFloat((value >> 24) & 0xFF) / 255
             )
         }
+        // Named colors are resolved from the app's Assets.xcassets via UIColor(named:).
+        // The host app must define color sets for all used names (see documentation).
         return UIColor(named: color)
     }
 
@@ -483,6 +491,72 @@ class WUIEnvironment: NSObject {
             }
         } catch {
             NSLog("%@ Failed to save downloaded file: %@", logTag, error.localizedDescription)
+        }
+    }
+
+    /// Downloads a file to Documents/Downloads without navigating the webview.
+    /// Used to handle window.open() calls that should behave as downloads.
+    /// Local file:// URLs are copied; remote URLs are fetched via URLSession.
+    private func downloadFileInBackground(url: URL) {
+        let filename = url.lastPathComponent.isEmpty ? "download" : url.lastPathComponent
+        if url.isFileURL {
+            let mimeType = mimeTypeForExtension(url.pathExtension)
+            let fm = FileManager.default
+            guard let dir = fm.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let downloadsDir = dir.appendingPathComponent("Downloads", isDirectory: true)
+            if !fm.fileExists(atPath: downloadsDir.path) {
+                try? fm.createDirectory(at: downloadsDir, withIntermediateDirectories: true)
+            }
+            let nameBase = (filename as NSString).deletingPathExtension
+            let ext = (filename as NSString).pathExtension
+            var destURL = downloadsDir.appendingPathComponent(filename)
+            var version = 1
+            while fm.fileExists(atPath: destURL.path) {
+                let newName = ext.isEmpty ? "\(nameBase) (\(version))" : "\(nameBase) (\(version)).\(ext)"
+                destURL = downloadsDir.appendingPathComponent(newName)
+                version += 1
+            }
+            do {
+                try fm.copyItem(at: url, to: destURL)
+                NSLog("%@ File copied to downloads: %@", logTag, destURL.path)
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.pushJavascript(arguments: [
+                        "event":    "onDownloadFile",
+                        "filename": destURL.lastPathComponent,
+                        "mimetype": mimeType,
+                        "uri":      destURL.absoluteString
+                    ])
+                    self.presentShareSheet(for: destURL)
+                }
+            } catch {
+                NSLog("%@ Failed to copy file to downloads: %@", logTag, error.localizedDescription)
+            }
+        } else {
+            NSLog("%@ Start background download: %@", logTag, filename)
+            URLSession.shared.downloadTask(with: url) { [weak self] tempURL, response, error in
+                guard let self = self, let tempURL = tempURL else {
+                    NSLog("%@ Background download failed: %@", self?.logTag ?? "WUIEnvironment", error?.localizedDescription ?? "unknown")
+                    return
+                }
+                let mimeType = response?.mimeType ?? self.mimeTypeForExtension(url.pathExtension)
+                let suggestedFilename = response?.suggestedFilename ?? filename
+                self.saveDownloadedFile(from: tempURL, filename: suggestedFilename, mimeType: mimeType)
+            }.resume()
+        }
+    }
+
+    private func mimeTypeForExtension(_ ext: String) -> String {
+        switch ext.lowercased() {
+            case "pdf":         return "application/pdf"
+            case "png":         return "image/png"
+            case "jpg", "jpeg": return "image/jpeg"
+            case "gif":         return "image/gif"
+            case "webp":        return "image/webp"
+            case "txt":         return "text/plain"
+            case "html":        return "text/html"
+            case "zip":         return "application/zip"
+            default:            return "application/octet-stream"
         }
     }
 
@@ -550,7 +624,7 @@ extension WUIEnvironment: WKScriptMessageHandler {
                 }
             case "readFile":
                 if let name = json["name"] as? String {
-                    push(readFile(name: name) as Any)
+                    push(readFile(name: name) ?? "")
                 } else {
                     push("")
                 }
@@ -690,6 +764,11 @@ extension WUIEnvironment: WKDownloadDelegate {
         downloadDestinations[ObjectIdentifier(download)] = (url: destURL, mimeType: mimeType)
         completionHandler(destURL)
     }
+    
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+        downloadDestinations.removeValue(forKey: ObjectIdentifier(download))
+        NSLog("%@ Download failed: %@", logTag, error.localizedDescription)
+    }
 
     func downloadDidFinish(_ download: WKDownload) {
         let key = ObjectIdentifier(download)
@@ -706,11 +785,6 @@ extension WUIEnvironment: WKDownloadDelegate {
             ])
             self.presentShareSheet(for: info.url)
         }
-    }
-
-    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
-        downloadDestinations.removeValue(forKey: ObjectIdentifier(download))
-        NSLog("%@ Download failed: %@", logTag, error.localizedDescription)
     }
 }
 
@@ -758,5 +832,19 @@ extension WUIEnvironment: CLLocationManagerDelegate {
             default:
                 break
         }
+    }
+}
+
+// MARK: - WKUIDelegate
+
+extension WUIEnvironment: WKUIDelegate {
+
+    /// Intercepts window.open() calls from JS and routes them as background downloads,
+    /// matching the Android behavior: no navigation occurs, onDownloadFile fires on completion.
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if let url = navigationAction.request.url {
+            downloadFileInBackground(url: url)
+        }
+        return nil
     }
 }

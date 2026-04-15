@@ -107,11 +107,13 @@
 				print("getDeviceInfo_sync", await env.getDeviceInfo());
 				print("getDisplayInfo_sync", await env.getDisplayInfo());
 				print("getAppInfo_sync", await env.getAppInfo());
+				print("getPermissionsStatus_sync", await env.getPermissionsStatus());
+				print("getCurrentPosition_sync", await env.getCurrentPosition());
+				print("getConnectionStatus_sync", await env.getConnectionStatus());
 			})();
 			setInterval(() => {
 				(async () => {
 					print("getPermissionsStatus_sync", await env.getPermissionsStatus());
-					print("getCurrentPosition_sync", await env.getCurrentPosition());
 					print("getConnectionStatus_sync", await env.getConnectionStatus());
 				})();
 			}, 1000);
