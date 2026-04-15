@@ -646,4 +646,4 @@ env.onReceiveDeepLink = function(url) {
 ```
 
 > [!NOTE]
-> When testing `getCurrentPosition` on the iOS Simulator, a simulated location must be configured: **Simulator menu → Features → Location**.
+> When testing `getCurrentPosition` on the iOS Simulator, a simulated location must be configured: **Simulator menu → Features → Location**, on the Android Simulator, it must be configured in: **Simulator menu → Extended controls → Location**
