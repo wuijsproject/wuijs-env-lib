@@ -382,22 +382,19 @@ public class WUIEnvironment {
             View decorView = window.getDecorView();
             float density = context.getResources().getDisplayMetrics().density;
             int densityDpi = context.getResources().getDisplayMetrics().densityDpi;
-
-            // Current physical dimensions
             int width = context.getResources().getDisplayMetrics().widthPixels;
             int height = context.getResources().getDisplayMetrics().heightPixels;
-
-            // Orientation
             String orientation = context.getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ? "landscape" : "portrait";
-
-            // Refresh rate (Hz)
             float refreshRate = activity.getWindowManager().getDefaultDisplay().getRefreshRate();
-
-            // Modern Insets detection (Safe Area)
+            String navigationMode = "unknown";
             int statusbarHeight = 0;
             int navigationbarHeight = 0;
             boolean hasNotch = false;
-
+			boolean statusbarTransparent = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS) != 0;
+            boolean statusbarLightMode = (decorView.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0;
+            boolean navigationbarTransparent = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION) != 0;
+            boolean navigationbarLightMode = (decorView.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) != 0;
+            boolean systembarDrawsBackgrounds = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) != 0;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 android.view.WindowInsets insets = decorView.getRootWindowInsets();
                 if (insets != null) {
@@ -409,8 +406,6 @@ public class WUIEnvironment {
                     }
                 }
             }
-
-            // Fallback if insets are 0 (before view is attached or on older versions)
             if (statusbarHeight == 0) {
                 int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
                 if (resourceId > 0) statusbarHeight = context.getResources().getDimensionPixelSize(resourceId);
@@ -419,18 +414,15 @@ public class WUIEnvironment {
                 int resourceId = context.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
                 if (resourceId > 0) navigationbarHeight = context.getResources().getDimensionPixelSize(resourceId);
             }
-
-            // Navigation Mode detection (Gestures vs Buttons)
-            // 0: 3-button, 1: 2-button, 2: Gestures
-            String navigationMode = "unknown";
             try {
-                int mode = Settings.Secure.getInt(context.getContentResolver(), "navigation_mode");
+				// Navigation Mode detection (Gestures vs Buttons)
+				// 0: 3-button, 1: 2-button, 2: Gestures
+					int mode = Settings.Secure.getInt(context.getContentResolver(), "navigation_mode");
                 navigationMode = mode == 2 ? "gestures" : mode == 1 ? "2-button" : "3-button";
             } catch (Settings.SettingNotFoundException e) {
                 // On some Honor/Huawei devices detect by bar height
                 if (navigationbarHeight > 0 && navigationbarHeight < (20 * density)) navigationMode = "gestures_hint";
             }
-
             displayInfo.put("width", (int) (width / density));
             displayInfo.put("height", (int) (height / density));
             displayInfo.put("density", density);
@@ -442,14 +434,6 @@ public class WUIEnvironment {
             displayInfo.put("statusbarHeight", (int) (statusbarHeight / density));
             displayInfo.put("navigationbarHeight", (int) (navigationbarHeight / density));
             displayInfo.put("notch", hasNotch);
-
-            // Style and compatibility flags
-            boolean statusbarTransparent = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS) != 0;
-            boolean statusbarLightMode = (decorView.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0;
-            boolean navigationbarTransparent = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION) != 0;
-            boolean navigationbarLightMode = (decorView.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) != 0;
-            boolean systembarDrawsBackgrounds = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) != 0;
-
             displayInfo.put("statusbarTransparent", statusbarTransparent);
             displayInfo.put("statusbarLightMode", statusbarLightMode);
             displayInfo.put("navigationbarTransparent", navigationbarTransparent);
@@ -553,8 +537,6 @@ public class WUIEnvironment {
             if (location == null && isGpsEnabled) {
                 location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             }
-
-            // If still null, try any other available provider
             if (location == null) {
                 for (String provider : locationManager.getProviders(true)) {
                     Location l = locationManager.getLastKnownLocation(provider);
@@ -564,9 +546,8 @@ public class WUIEnvironment {
                     }
                 }
             }
-
-            // If still null, try to get a fresh location (Android 11+)
             if (location == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+				// (Android 11+)
                 final Location[] freshLocation = new Location[1];
                 final CountDownLatch latch = new CountDownLatch(1);
                 try {
@@ -582,7 +563,6 @@ public class WUIEnvironment {
                                     latch.countDown();
                                 }
                             });
-
                     // Wait up to 5 seconds for a fresh location
                     if (latch.await(5, TimeUnit.SECONDS)) {
                         location = freshLocation[0];
@@ -591,7 +571,6 @@ public class WUIEnvironment {
                     Log.e(logTag, "Error requesting fresh location: " + e.getMessage());
                 }
             }
-
             if (location != null) {
                 position.put("latitude", location.getLatitude());
                 position.put("longitude", location.getLongitude());

@@ -12,6 +12,7 @@ class WUIEnvironment {
 	static #instance = null;
 	static #defaults = {
 		localStorageEnabled: true,
+		onReady: null,
 		onDownloadFile: null,
 		onReceiveDeepLink: null
 	};
@@ -20,6 +21,10 @@ class WUIEnvironment {
 	#reqCount = 0;
 	#resCount = 0;
 	#responses = {};
+	#localStorageEnabled = false;
+	#onReady = null;
+	#onDownloadFile = null;
+	#onReceiveDeepLink = null;
 
 	static response(args) {
 		const instance = WUIEnvironment.#instance;
@@ -34,13 +39,13 @@ class WUIEnvironment {
 			}
 			switch (event) {
 				case "onDownloadFile":
-					if (typeof (instance.onDownloadFile) == "function") {
-						instance.onDownloadFile(args);
+					if (typeof instance.#onDownloadFile === "function") {
+						instance.#onDownloadFile(args);
 					}
 					break;
 				case "onReceiveDeepLink":
-					if (typeof (instance.onReceiveDeepLink) == "function") {
-						instance.onReceiveDeepLink(args.url || "");
+					if (typeof instance.#onReceiveDeepLink === "function") {
+						instance.#onReceiveDeepLink(args.url || "");
 					}
 					break;
 			}
@@ -70,32 +75,45 @@ class WUIEnvironment {
 	}
 
 	get localStorageEnabled() {
-		return this._localStorageEnabled;
+		return this.#localStorageEnabled;
 	}
 
 	get onDownloadFile() {
-		return this._onDownloadFile;
+		return this.#onDownloadFile;
+	}
+
+	get onReady() {
+		return this.#onReady;
 	}
 
 	get onReceiveDeepLink() {
-		return this._onReceiveDeepLink;
+		return this.#onReceiveDeepLink;
 	}
 
 	set localStorageEnabled(value) {
-		if (typeof (value) == "boolean") {
-			this._localStorageEnabled = value;
+		if (typeof value === "boolean") {
+			this.#localStorageEnabled = value;
+		}
+	}
+
+	set onReady(value) {
+		if (typeof value === "function") {
+			this.#onReady = value;
+			if (this.#reqCount === this.#resCount && this.#reqCount > 0) {
+				this.#onReady(this.#reqCount);
+			}
 		}
 	}
 
 	set onDownloadFile(value) {
-		if (typeof (value) == "function") {
-			this._onDownloadFile = value;
+		if (typeof value === "function") {
+			this.#onDownloadFile = value;
 		}
 	}
 
 	set onReceiveDeepLink(value) {
-		if (typeof (value) == "function") {
-			this._onReceiveDeepLink = value;
+		if (typeof value === "function") {
+			this.#onReceiveDeepLink = value;
 		}
 	}
 
@@ -110,6 +128,9 @@ class WUIEnvironment {
 					resolve(response);
 				}
 				this.#resCount++;
+				if (this.#reqCount === this.#resCount && typeof this.#onReady === "function") {
+					this.#onReady(this.#reqCount);
+				}
 			} else if (this.environment == "wui.ios") {
 				const code = this.#reqCount;
 				this.#responses[code] = null;
@@ -122,24 +143,16 @@ class WUIEnvironment {
 						delete this.#responses[code];
 						this.#resCount++;
 						if (options.func == "readFile" && options.name && options.name.match(/\.json$/i) && typeof response === "string") {
-							try { response = JSON.parse(response || "{}"); } catch (e) {}
+							try { response = JSON.parse(response || "{}"); } catch (e) { }
 						}
 						resolve(response);
+						if (this.#reqCount === this.#resCount && typeof this.#onReady === "function") {
+							this.#onReady(this.#reqCount);
+						}
 					}
 				}, this.#checkInterval);
 			}
 		});
-	}
-
-	onReady(done) {
-		const check = setInterval(() => {
-			if (this.#reqCount == this.#resCount) {
-				clearInterval(check);
-				if (typeof (done) == "function") {
-					done(this.#reqCount);
-				}
-			}
-		}, this.#checkInterval);
 	}
 
 	isAppInForeground(done) {
@@ -264,7 +277,7 @@ class WUIEnvironment {
 		}
 		if (this.isLocalEnv) {
 			return this.#request({ func: "saveFile", name: name, content: content }).then(done);
-		} else if (this._localStorageEnabled && window.localStorage) {
+		} else if (this.#localStorageEnabled && window.localStorage) {
 			window.localStorage.setItem(name, content);
 			if (typeof (done) == "function") {
 				done(true);
@@ -277,7 +290,7 @@ class WUIEnvironment {
 	readFile(name, done) {
 		if (this.isLocalEnv) {
 			return this.#request({ func: "readFile", name: name }).then(done);
-		} else if (this._localStorageEnabled && window.localStorage) {
+		} else if (this.#localStorageEnabled && window.localStorage) {
 			let content = window.localStorage.getItem(name) || "";
 			if (name.match(/\.json$/i)) {
 				try {

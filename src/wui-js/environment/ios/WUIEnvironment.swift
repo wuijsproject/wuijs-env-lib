@@ -23,24 +23,14 @@ class WUIEnvironment: NSObject {
     private var deepLinkURL: String? = nil
     private var pageLoaded: Bool = false
     private let logTag = "WUIEnvironment"
-
-    // Status/navigation bar overlay views
     private weak var statusbarView: UIView?
     private weak var navigationbarView: UIView?
-    /// Host ViewController should read this from `preferredStatusBarStyle` and call
-    /// `setNeedsStatusBarAppearanceUpdate()` after each change.
     var preferredStatusBarStyle: UIStatusBarStyle = .default
-
-    // Network monitoring
     private var networkMonitor: NWPathMonitor?
     private var networkQueue = DispatchQueue(label: "WUIEnvironment.network")
     private var isConnected: Bool = false
-
-    // Location
     private var locationManager: CLLocationManager?
     private var locationCompletion: (([String: Any]) -> Void)?
-
-    // Download tracking (destination URL + mimeType keyed by download identity)
     private var downloadDestinations: [ObjectIdentifier: (url: URL, mimeType: String)] = [:]
 
     // MARK: - Constructor
@@ -84,8 +74,6 @@ class WUIEnvironment: NSObject {
         setupUserAgent()
     }
 
-    /// Appends "WUIEnvironment (name/version)" to the default WKWebView user agent.
-    /// This is what wui-environment-0.1.js reads to detect the wui.ios environment.
     private func setupUserAgent() {
         let appInfo = getAppInfo()
         let name = appInfo["name"] as? String ?? ""
@@ -157,7 +145,8 @@ class WUIEnvironment: NSObject {
             } else {
                 refreshRate = 60
             }
-            if let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) {
+            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = scene.windows.first(where: { $0.isKeyWindow }) {
                 let insets = window.safeAreaInsets
                 statusbarHeight = Int(insets.top)
                 navigationbarHeight = Int(insets.bottom)
@@ -216,7 +205,7 @@ class WUIEnvironment: NSObject {
         ]
 
         // Location (sync)
-        switch CLLocationManager.authorizationStatus() {
+        switch CLLocationManager().authorizationStatus {
             case .authorizedAlways, .authorizedWhenInUse: permissions["location"] = "granted"
             case .denied, .restricted:                    permissions["location"] = "denied"
             case .notDetermined:                          permissions["location"] = "default"
@@ -236,6 +225,7 @@ class WUIEnvironment: NSObject {
             case .authorized:            permissions["contacts"] = "granted"
             case .denied, .restricted:   permissions["contacts"] = "denied"
             case .notDetermined:         permissions["contacts"] = "default"
+            case .limited:               permissions["contacts"] = "granted"
             @unknown default: break
         }
 
@@ -245,6 +235,7 @@ class WUIEnvironment: NSObject {
                 case .authorized, .provisional: permissions["notifications"] = "granted"
                 case .denied:                   permissions["notifications"] = "denied"
                 case .notDetermined:            permissions["notifications"] = "default"
+                case .ephemeral:                permissions["notifications"] = "granted"
                 @unknown default: break
             }
             DispatchQueue.main.async { completion(permissions) }
@@ -252,29 +243,16 @@ class WUIEnvironment: NSObject {
     }
 
     /// Async — result is delivered via completion on the main thread.
+    /// Setting delegate = self triggers locationManagerDidChangeAuthorization immediately
+    /// on iOS 14+, which handles all authorization states without reading authorizationStatus
+    /// synchronously on the main thread.
     func getCurrentPosition(completion: @escaping ([String: Any]) -> Void) {
         locationCompletion = completion
         let manager = CLLocationManager()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager = manager
-        let status = CLLocationManager.authorizationStatus()
-        switch status {
-        case .notDetermined:
-            manager.requestWhenInUseAuthorization()
-        case .denied, .restricted:
-            locationCompletion?(["error": "Location permission denied"])
-            locationCompletion = nil
-            locationManager = nil
-        default:
-            if CLLocationManager.locationServicesEnabled() {
-                manager.requestLocation()
-            } else {
-                locationCompletion?(["error": "Location services are disabled"])
-                locationCompletion = nil
-                locationManager = nil
-            }
-        }
+        manager.requestWhenInUseAuthorization()
     }
 
     func getConnectionStatus() -> Bool {
@@ -293,12 +271,11 @@ class WUIEnvironment: NSObject {
             guard let self = self, let vc = self.viewController else { return }
             let uiColor = self.parseColor(color) ?? UIColor.white
             self.statusbarView?.removeFromSuperview()
-            let height: CGFloat
-            if let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) {
-                height = window.safeAreaInsets.top
-            } else {
-                height = UIApplication.shared.statusBarFrame.height
-            }
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let window = scene?.windows.first(where: { $0.isKeyWindow })
+            let height = window?.safeAreaInsets.top
+                ?? scene?.statusBarManager?.statusBarFrame.height
+                ?? 0
             let view = UIView(frame: CGRect(x: 0, y: 0, width: vc.view.bounds.width, height: height))
             view.backgroundColor = uiColor
             view.autoresizingMask = [.flexibleWidth]
@@ -309,9 +286,7 @@ class WUIEnvironment: NSObject {
             vc.setNeedsStatusBarAppearanceUpdate()
             // In SwiftUI apps UIHostingController doesn't forward childForStatusBarStyle,
             // so propagate icon style via window overrideUserInterfaceStyle as fallback.
-            if let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) {
-                window.overrideUserInterfaceStyle = darkIcons ? .light : .dark
-            }
+            window?.overrideUserInterfaceStyle = darkIcons ? .light : .dark
             NSLog("%@ Statusbar set color: %@, darkIcons: %@", self.logTag, color, darkIcons ? "true" : "false")
         }
     }
@@ -820,9 +795,9 @@ extension WUIEnvironment: CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         switch manager.authorizationStatus {
             case .authorizedWhenInUse, .authorizedAlways:
-                if CLLocationManager.locationServicesEnabled() {
-                    manager.requestLocation()
-                }
+                // locationServicesEnabled() is not checked here to avoid the main-thread
+                // unresponsiveness warning — didFailWithError handles the disabled case.
+                manager.requestLocation()
             case .denied, .restricted:
                 DispatchQueue.main.async { [weak self] in
                     self?.locationCompletion?(["error": "Location permission denied"])

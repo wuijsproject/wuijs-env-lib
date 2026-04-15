@@ -162,10 +162,10 @@
 		<h3>.setStatusbarStyle()</h3>
 		<button onclick="env.setStatusbarStyle('#ff0000', false);">change style: red color</button>
 		<button onclick="env.setStatusbarStyle('#1e90ff', false);">change style: dodger blue color</button>
-		<button onclick="env.setStatusbarStyle('statusbarLightColor', true);">change style: statusbar light mode (Android)</button>
-		<button onclick="env.setStatusbarStyle('statusbarLightOverlayColor', true);">change style: statusbar light overlay mode (Android)</button>
-		<button onclick="env.setStatusbarStyle('statusbarDarkColor', false);">change style: statusbar dark mode (Android)</button>
-		<button onclick="env.setStatusbarStyle('statusbarDarkOverlayColor', false);">change style: statusbar dark overlay mode (Android)</button>
+		<button onclick="env.setStatusbarStyle('statusbarLightColor', true);">change style: statusbar light mode</button>
+		<button onclick="env.setStatusbarStyle('statusbarLightOverlayColor', true);">change style: statusbar light overlay mode</button>
+		<button onclick="env.setStatusbarStyle('statusbarDarkColor', false);">change style: statusbar dark mode</button>
+		<button onclick="env.setStatusbarStyle('statusbarDarkOverlayColor', false);">change style: statusbar dark overlay mode</button>
 		<h3>.openAppSettings()</h3>
 		<button onclick="env.openAppSettings();">open app settings</button>
 		<h3>.openURL()</h3>
@@ -180,8 +180,8 @@
 		<div>async return:</div>
 		<pre id="onReceiveDeepLink_async">...</pre>
 		<script>
-			env.onReady((totalRequests) => {print("onReady_async", "totalRequests: "+totalRequests);});
-			env.onReceiveDeepLink((url) => {print("onReceiveDeepLink_async", url);});
+			env.onReady = (totalRequests) => {print("onReady_async", "totalRequests: "+totalRequests);};
+			env.onReceiveDeepLink = (url) => {print("onReceiveDeepLink_async", url);};
 		</script>
 	</body>
 </html>

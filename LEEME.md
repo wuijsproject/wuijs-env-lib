@@ -23,6 +23,9 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 *   [Descripción General](#overview)
 	*   [Acerca del Proyecto WUI/JS](#project)
 	*   [Mapa de Directorios](#dirmap)
+*   [Inicio Rápido](#quickstart)
+	*   [Android + Web](#quickstart-android)
+	*   [iOS + Web](#quickstart-ios)
 *   [Implementación en Android](#android)
 	*   [Constructor Java](#android-constructor)
 	*   [Métodos Java](#android-methods)
@@ -34,7 +37,7 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 		4.   [Configuración del Manifest](#android-config-manifest)
 		5.   [Configuración de Colores](#android-config-colors)
 		6.   [Integración de la clase Java](#android-config-wui-environment-java)
-		7.   [Integración de la calse JavaScript](#android-config-wui-environment-js)
+		7.   [Integración de la clase JavaScript](#android-config-wui-environment-js)
 		8.   [Inicialización del MainActivity](#android-config-mainactivity)
 *   [Implementación en iOS](#ios)
 	*   [Constructor Swift](#ios-constructor)
@@ -78,7 +81,7 @@ WUI/JS Environment Lib es parte del proyecto WUI/JS, que consta actualmente de 4
 
 ### Mapa de Directorios
 
-La librería debe ser descargada desde el repositorio de GitHub [wui-is/wuijs-environment-lib](https://github.com/wui-is/wuijs-environment-lib). Esta librería cuenta con las 3 clases, Java para Android, Swift para iOS y JavaScript como contraparte Web para las dos anteriores.
+La librería debe ser descargada desde el repositorio de GitHub [wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib). Esta librería cuenta con las 3 clases, Java para Android, Swift para iOS y JavaScript como contraparte Web para las dos anteriores.
 
 La estructura de directorios del repositorio es:
 
@@ -101,13 +104,79 @@ wuijs-environment-lib/
 | [imgs/logo](imgs/logo/)                                           | Logotipo e isotipo del proyecto en formato SVG y PNG. |
 | [src](src/)                                                       | Fuentes principales de la última versión. |
 | [src/wui-js](src/wui-js)                                          | Directorio del proyecto WUI/JS. |
-| [src/wui-js/environment/android](src/wui-js/environment/android/) | Librería WUI/JS Enviroment para Android. |
-| [src/wui-js/environment/ios](src/wui-js/environment/ios/)         | Librería WUI/JS Enviroment para iOS. |
-| [src/wui-js/environment/web](src/wui-js/environment/web/)         | Librería WUI/JS Enviroment para Web. |
+| [src/wui-js/environment/android](src/wui-js/environment/android/) | Librería WUI/JS Environment para Android. |
+| [src/wui-js/environment/ios](src/wui-js/environment/ios/)         | Librería WUI/JS Environment para iOS. |
+| [src/wui-js/environment/web](src/wui-js/environment/web/)         | Librería WUI/JS Environment para Web. |
 | [src/wui-js/environment/demo](src/wui-js/environment/demo/)       | Directorio con interfaz de prueba para entornos Android e iOS. |
 
 > [!NOTE]
 > La librería `wuijs-environment-lib` opera conjuntamente, es decir, se debe implementar la combinación **Android + Web** o **iOS + Web** para su correcto funcionamiento.
+
+<a name="quickstart"></a>
+
+## Inicio Rápido
+
+Integración mínima para un proyecto nuevo. Para configuración completa ver las secciones específicas de cada plataforma.
+
+<a name="quickstart-android"></a>
+
+### Android + Web
+
+**Requisitos:** Android Studio, proyecto nuevo con `AppCompatActivity` y `minSdk ≥ 24`.
+
+1. Clonar la librería y copiar `src/wui-js/environment/android/WUIEnvironment.java` a `app/src/main/java/tu/paquete/nombre/`. Editar la primera línea para que coincida con el ID del paquete.
+2. Copiar `src/wui-js/environment/web/` y `src/wui-js/environment/demo/` a `app/src/main/assets/libraries/wui-js/environment/`.
+3. Agregar permisos, colores y configuración Gradle según [Instalación y Configuración](#android-install).
+4. Inicializar en `MainActivity.java`:
+
+```java
+wuiEnvironment = new WUIEnvironment(this);
+wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
+wuiEnvironment.saveDeepLink(getIntent());
+```
+
+5. En las páginas HTML propias, incluir la clase JS e instanciarla:
+
+```html
+<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script>
+    const env = new WUIEnvironment();
+    env.getDeviceInfo(function(info) {
+        console.log("Plataforma:", info.platform, "| Modelo:", info.model);
+    });
+</script>
+```
+
+<a name="quickstart-ios"></a>
+
+### iOS + Web
+
+**Requisitos:** Xcode 13+, proyecto nuevo con SwiftUI.
+
+1. Clonar la librería y copiar `src/wui-js/environment/ios/WUIEnvironment.swift` al proyecto Xcode. Agregar el archivo a la fase **Sources** del target.
+2. Copiar `src/wui-js/environment/web/` y `src/wui-js/environment/demo/` a una carpeta llamada `assets/libraries/wui-js/environment/` dentro del proyecto Xcode. Agregar la carpeta al target como **folder reference** (ícono azul en Xcode).
+3. Agregar claves de permisos, color sets y configuración Deep Link según [Instalación y Configuración](#ios-install).
+4. Inicializar en `EnvironmentViewController` dentro de `MainView.swift`:
+
+```swift
+wuiEnvironment = WUIEnvironment(viewController: self)
+wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/libraries/wui-js/environment/demo/index.html")
+```
+
+5. En las páginas HTML propias, incluir la clase JS e instanciarla:
+
+```html
+<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script>
+    const env = new WUIEnvironment();
+    env.getDeviceInfo(function(info) {
+        console.log("Plataforma:", info.platform, "| Modelo:", info.model);
+    });
+</script>
+```
+
+> [!NOTE]
+> Abrir primero la página demo (`demo/index.html`) para verificar que el bridge funciona antes de cambiar a la URL de producción.
 
 <a name="android"></a>
 
@@ -121,7 +190,7 @@ La implementación en Android utiliza como motor de renderización WebView.
 
 | Constructor | Descripción |
 | ----------- | ----------- |
-| `WUIEnvironment(Context context[, boolean developMode])` | Inicializa el entorno WUI con configuración por defecto. `developMode = true` permite SSL con certificados no confiables y activa logs de depuración. |
+| `WUIEnvironment(Context context[, boolean developMode])` | Inicializa el entorno WUI con configuración por defecto. `developMode = true` permite SSL con certificados no confiables y activa logs de depuración. **No usar `true` en producción** — deshabilita la validación de certificados en todo el WebView. |
 
 <a name="android-methods"></a>
 
@@ -170,7 +239,7 @@ Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acc
 Clonar el repositorio desde la cuenta oficial de wuiproject en GitHub:
 
 ```bash
-git clone https://github.com/wui-is/wuijs-environment-lib.git
+git clone https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -182,21 +251,7 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 Asegúrese de que los repositorios estén correctamente definidos:
 
-##### **settings.gradle.kts (Kotlin)**
-
 ```kotlin
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-```
-
-##### **settings.gradle (Groovy)**
-
-```groovy
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -212,22 +267,10 @@ dependencyResolutionManagement {
 
 Asegúrese de que `buildConfig` esté habilitado con el valor `true`:
 
-##### **build.gradle.kts (Kotlin)**
-
 ```kotlin
 android {
     buildFeatures {
         buildConfig = true
-    }
-}
-```
-
-##### **build.gradle (Groovy)**
-
-```groovy
-android {
-    buildFeatures {
-        buildConfig true
     }
 }
 ```
@@ -314,6 +357,10 @@ La librería utiliza estas llaves para el estilo de las barras de estado y naveg
 > [!WARNING]
 > Se deben definir todas las llaves para que la clase Java no arroje error.
 
+> [!NOTE]
+> Los colores **Light** son compatibles con el tema **default** del plugin **WUIPluginThemes** de la librería [wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib).<br>
+> Los colores **Dark** se sugiere relacionarlos con el color de acento de la aplicación.
+
 <a name="android-config-wui-environment-java"></a>
 
 #### 6. Integración de la clase Java `WUIEnvironment.java`
@@ -329,7 +376,7 @@ package YOUR.PACKAGE.NAME; // Update this to match your project package
 
 <a name="android-config-wui-environment-js"></a>
 
-#### 7. Integración de la calse JavaScript `wui-environment-0.1.js`
+#### 7. Integración de la clase JavaScript `wui-environment-0.1.js`
 
 Copiar el contenido del directorio `src/wui-js/environment/web/` al directorio `assets/` del proyecto Android. Se recomienda la siguiente estructura:
 
@@ -362,11 +409,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         try {
             wuiEnvironment = new WUIEnvironment(this);
-            // Carga página demo (comenta la siguiente línea después de validar la prueba)
-            wuiEnvironment.openURL("file:///android_asset/libreries/wui-js/environment/demo/index.html");
+
+			// Carga página demo (comenta la siguiente línea después de validar la prueba)
+            wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
             // Carga página inicial (descomenta la siguiente línea después de validar la prueba)
             //wuiEnvironment.openURL("file:///android_asset/pages/index.html");
-            // Habilitar peticiones Deep Link durante la apertura de la app
+
+			// Habilitar peticiones Deep Link durante la apertura de la app
             wuiEnvironment.saveDeepLink(getIntent());
         } catch (JSONException e) {
             e.printStackTrace();
@@ -399,7 +448,7 @@ La implementación en iOS utiliza como motor de renderización WebKit (WKWebView
 
 | Constructor | Descripción |
 | ----------- | ----------- |
-| `WUIEnvironment(viewController: UIViewController[, developMode: Bool])` | Inicializa el entorno WUI. `developMode = true` permite SSL con certificados no confiables y activa logs de depuración. |
+| `WUIEnvironment(viewController: UIViewController[, developMode: Bool])` | Inicializa el entorno WUI. `developMode = true` permite SSL con certificados no confiables y activa logs de depuración. **No usar `true` en producción** — deshabilita la validación de certificados en todo el WKWebView. |
 
 <a name="ios-methods"></a>
 
@@ -448,7 +497,7 @@ Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acc
 Clonar el repositorio desde GitHub si aún no se ha realizado:
 
 ```bash
-git clone https://github.com/wui-is/wuijs-environment-lib.git
+git clone https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -502,6 +551,10 @@ Para agregar un color set en Xcode: abrir `Assets.xcassets`, hacer clic en **+**
 > [!WARNING]
 > Todos los color sets utilizados por la aplicación deben estar definidos. Si un color nombrado no se encuentra en `Assets.xcassets`, `UIColor(named:)` devuelve `nil` y la barra afectada usará blanco por defecto.
 
+> [!NOTE]
+> Los colores **Light** son compatibles con el tema **default** del plugin **WUIPluginThemes** de la librería [wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib).<br>
+> Los colores **Dark** se sugiere relacionarlos con el color de acento de la aplicación.
+
 <a name="ios-config-wui-environment-swift"></a>
 
 #### 4. Integración de la clase Swift `WUIEnvironment.swift`
@@ -528,14 +581,22 @@ Lo anterior asegura que los ejemplos de inicialización funcionen correctamente.
 
 El nombre del archivo `packageApp.swift` cambia dependiendo del nombre del paquete que se asignó al proyecto.
 
+Usar `.onOpenURL` para interceptar URLs de Deep Link y reenviarlas al bridge mediante `NotificationCenter`. Este es el lugar correcto para manejar la apertura de URLs en una app SwiftUI.
+
 ```swift
 import SwiftUI
+
+extension Notification.Name {
+    static let wuiDeepLink = Notification.Name("WUIDeepLink")
+}
 
 @main
 struct packageApp: App {
     var body: some Scene {
         WindowGroup {
-            MainView()
+            MainView().onOpenURL { url in
+                NotificationCenter.default.post(name: .wuiDeepLink, object: url)
+            }
         }
     }
 }
@@ -545,16 +606,26 @@ struct packageApp: App {
 
 #### 7. Inicialización del MainView `MainView.swift`
 
-El nombre del archivo `MainView.swift` es opcoinal, no obstante, debe se coherente con el nombre de la función llamada desde `packageApp.swift`.
+El nombre del archivo `MainView.swift` es opcional, no obstante, debe ser coherente con el nombre de la función llamada desde `packageApp.swift`.
 
 ```swift
 import SwiftUI
 import UIKit
 import WebKit
 
+extension Notification.Name {
+    static let wuiDeepLink = Notification.Name("WUIDeepLink")
+}
+
 struct MainView: View {
     var body: some View {
-        EnvironmentView().ignoresSafeArea()
+        EnvironmentView()
+            .ignoresSafeArea()
+            .onOpenURL { url in
+                // Reenvía las URLs de Deep Link a WUIEnvironment mediante NotificationCenter.
+                // .onOpenURL gestiona tanto el lanzamiento de la app como la recepción en ejecución.
+                NotificationCenter.default.post(name: .wuiDeepLink, object: url)
+            }
     }
 }
 
@@ -582,11 +653,15 @@ class EnvironmentViewController: UIViewController {
         wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/libraries/wui-js/environment/demo/index.html")
         // Carga página inicial (descomenta la siguiente línea después de validar la prueba)
         // wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/pages/index.html")
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
     }
 
-    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
-        // Habilitar peticiones Deep Link durante la ejecución de la app
-        wuiEnvironment?.saveDeepLink(url: contexts.first?.url)
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .wuiDeepLink, object: nil)
+    }
+
+    @objc private func handleDeepLink(_ notification: Notification) {
+        wuiEnvironment?.saveDeepLink(url: notification.object as? URL)
     }
 }
 ```
@@ -595,18 +670,41 @@ class EnvironmentViewController: UIViewController {
 
 ## Implementación en Web
 
+La clase JavaScript `WUIEnvironment` debe ser incluida en cada página HTML que utilice el bridge. Copiar `wui-environment-0.1.js` a la carpeta de assets del proyecto y cargarlo con una etiqueta `<script>` antes de cualquier llamada al bridge:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+</head>
+<body>
+    <script>
+        const env = new WUIEnvironment();
+        env.getDeviceInfo(function(info) {
+            console.log("Plataforma:", info.platform);
+        });
+    </script>
+</body>
+</html>
+```
+
+> [!NOTE]
+> La ruta en `src` es relativa al archivo HTML. En Android, los assets se cargan desde `app/src/main/assets/`; en iOS, desde la carpeta `assets/` agregada al target de Xcode. La ruta recomendada `libraries/wui-js/environment/web/wui-environment-0.1.js` coincide con la estructura descrita en los pasos de instalación.
+
+**Comportamiento del bridge por plataforma:**
+- **Android**: las llamadas son **síncronas** — `Android.request()` devuelve el resultado inmediatamente.
+- **iOS**: las llamadas son **asíncronas** — el lado nativo llama a `WUIEnvironment.response()` cuando termina.
+
+La librería JS abstrae ambos comportamientos en la misma API basada en callbacks.
+
 <a name="web-methods"></a>
-
-### Métodos JavaScript de la Clase
-
-| Método    | Tipo de retorno | Descripción |
-| --------- |-----------------| ----------- |
-| `onReady` | `void`          | `onReady(done)`<br><br>Argumentos:<br>**• done:** `function`, callback que recibe el número total de solicitudes realizadas.<br><br>Ejecuta el callback cuando todas las solicitudes pendientes han recibido respuesta. Útil para sincronizar la carga inicial de datos antes de renderizar la UI. |
 
 ### Métodos JavaScript de la Instancia
 
 | Método                  | Tipo de retorno           | Descripción |
 | ----------------------- |---------------------------| ----------- |
+| `onReady`               | `void`                    | `onReady = done`<br><br>Argumentos:<br>**• done:** `function`, callback que recibe el número total de solicitudes realizadas.<br><br>Propiedad. Ejecuta el callback cuando todas las solicitudes bridge pendientes han recibido respuesta. Si se asigna después de que todas las solicitudes ya se resolvieron, se ejecuta inmediatamente. |
 | `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground(done)`<br><br>Verifica si la aplicación está en primer plano. |
 | `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo(done)`<br><br>Obtiene información del hardware (UUID, modelo, plataforma, etc.). |
 | `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo(done)`<br><br>Obtiene métricas de pantalla y modo de navegación. |
@@ -627,9 +725,6 @@ class EnvironmentViewController: UIViewController {
 <a name="web-js-usage"></a>
 
 ### Uso JavaScript
-
-Todas las llamadas al bridge en iOS son asíncronas — el lado nativo responde mediante `WUIEnvironment.response()` una vez completada la operación.
-La librería JavaScript abstrae esto en Promises:
 
 ```javascript
 const env = new WUIEnvironment();
@@ -656,7 +751,7 @@ env.getCurrentPosition(function(position) {
     }
 });
 
-env.onReady(function(count) {
+env.onReady = function(count) {
     console.log("Todas las", count, "solicitudes resueltas");
 });
 
@@ -670,4 +765,4 @@ env.onReceiveDeepLink = function(url) {
 ```
 
 > [!NOTE]
-> Al probar `getCurrentPosition` en el simulador de iOS, se debe configurar una ubicación simulada: **menú del Simulador → Features → Location**, en el simulador de Android, se debe configurar en: **menú del Simulador → Extended controls → Location**
+> Al probar `getCurrentPosition` en el simulador de Android, se debe configurar una ubicación simulada: **menú del Simulador → Extended controls → Location**, en el simulador de iOS, se debe configurar en: **menú del Simulador → Features → Location**

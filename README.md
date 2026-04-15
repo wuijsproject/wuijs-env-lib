@@ -23,6 +23,9 @@ Author: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 *   [Overview](#overview)
 	*   [About the WUI/JS Project](#project)
 	*   [Directory Map](#dirmap)
+*   [Quick Start](#quickstart)
+	*   [Android + Web](#quickstart-android)
+	*   [iOS + Web](#quickstart-ios)
 *   [Android Implementation](#android)
 	*   [Java Constructor](#android-constructor)
 	*   [Java Methods](#android-methods)
@@ -78,7 +81,7 @@ WUI/JS Environment Lib is part of the WUI/JS project, which currently consists o
 
 ### Directory Map
 
-The library must be downloaded from the GitHub repository [wui-is/wuijs-environment-lib](https://github.com/wui-is/wuijs-environment-lib). This library includes 3 classes: Java for Android, Swift for iOS, and JavaScript as the web counterpart for both.
+The library must be downloaded from the GitHub repository [wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib). This library includes 3 classes: Java for Android, Swift for iOS, and JavaScript as the web counterpart for both.
 
 The repository directory structure is:
 
@@ -109,6 +112,72 @@ wuijs-environment-lib/
 > [!NOTE]
 > The `wuijs-environment-lib` library operates jointly, meaning the **Android + Web** or **iOS + Web** combination must be implemented for it to work correctly.
 
+<a name="quickstart"></a>
+
+## Quick Start
+
+Minimal integration for a new project. For full configuration details see the platform-specific sections below.
+
+<a name="quickstart-android"></a>
+
+### Android + Web
+
+**Prerequisites:** Android Studio, new project with `AppCompatActivity` and `minSdk ≥ 24`.
+
+1. Clone the library and copy `src/wui-js/environment/android/WUIEnvironment.java` to `app/src/main/java/your/package/name/`. Edit the first line to match your package ID.
+2. Copy `src/wui-js/environment/web/` and `src/wui-js/environment/demo/` to `app/src/main/assets/libraries/wui-js/environment/`.
+3. Add permissions, colors, and Gradle config as described in [Installation and Setup](#android-install).
+4. Initialize in `MainActivity.java`:
+
+```java
+wuiEnvironment = new WUIEnvironment(this);
+wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
+wuiEnvironment.saveDeepLink(getIntent());
+```
+
+5. In your own HTML pages, include the JS class and instantiate it:
+
+```html
+<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script>
+    const env = new WUIEnvironment();
+    env.getDeviceInfo(function(info) {
+        console.log("Platform:", info.platform, "| Model:", info.model);
+    });
+</script>
+```
+
+<a name="quickstart-ios"></a>
+
+### iOS + Web
+
+**Prerequisites:** Xcode 13+, new SwiftUI project.
+
+1. Clone the library and copy `src/wui-js/environment/ios/WUIEnvironment.swift` into the Xcode project. Add it to the target's **Sources** build phase.
+2. Copy `src/wui-js/environment/web/` and `src/wui-js/environment/demo/` to a folder named `assets/libraries/wui-js/environment/` inside the Xcode project. Add the folder to the target as a **folder reference** (blue icon in Xcode).
+3. Add permission keys, color sets, and Deep Link config as described in [Installation and Setup](#ios-install).
+4. Initialize in `EnvironmentViewController` inside `MainView.swift`:
+
+```swift
+wuiEnvironment = WUIEnvironment(viewController: self)
+wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/libraries/wui-js/environment/demo/index.html")
+```
+
+5. In your own HTML pages, include the JS class and instantiate it:
+
+```html
+<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script>
+    const env = new WUIEnvironment();
+    env.getDeviceInfo(function(info) {
+        console.log("Platform:", info.platform, "| Model:", info.model);
+    });
+</script>
+```
+
+> [!NOTE]
+> Open the demo page first (`demo/index.html`) to verify the bridge works before switching to your production HTML.
+
 <a name="android"></a>
 
 ## Android Implementation
@@ -121,7 +190,7 @@ The Android implementation uses WebView as its rendering engine.
 
 | Constructor | Description |
 | ----------- | ----------- |
-| `WUIEnvironment(Context context[, boolean developMode])` | Initializes the WUI environment with default settings. `developMode = true` allows SSL with untrusted certificates and enables debug logging. |
+| `WUIEnvironment(Context context[, boolean developMode])` | Initializes the WUI environment with default settings. `developMode = true` allows SSL with untrusted certificates and enables debug logging. **Do not use `true` in production** — it disables certificate validation for the entire WebView. |
 
 <a name="android-methods"></a>
 
@@ -170,7 +239,7 @@ Events are callbacks that the native side sends to JavaScript when an asynchrono
 Clone the repository from the official wuiproject account on GitHub:
 
 ```bash
-git clone https://github.com/wui-is/wuijs-environment-lib.git
+git clone https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -182,21 +251,7 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 Ensure the repositories are correctly defined:
 
-##### **settings.gradle.kts (Kotlin)**
-
 ```kotlin
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-```
-
-##### **settings.gradle (Groovy)**
-
-```groovy
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -212,22 +267,10 @@ dependencyResolutionManagement {
 
 Ensure `buildConfig` is enabled with the value `true`:
 
-##### **build.gradle.kts (Kotlin)**
-
 ```kotlin
 android {
     buildFeatures {
         buildConfig = true
-    }
-}
-```
-
-##### **build.gradle (Groovy)**
-
-```groovy
-android {
-    buildFeatures {
-        buildConfig true
     }
 }
 ```
@@ -314,6 +357,10 @@ The library uses these keys for the status and navigation bar styles:
 > [!WARNING]
 > All keys must be defined or the Java class will throw an error.
 
+> [!NOTE]
+> The **Light** colors are compatible with the **default** theme of the **WUIPluginThemes** plugin from the [wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib) library.<br>
+> The **Dark** colors are suggested to be related to the application's accent color.
+
 <a name="android-config-wui-environment-java"></a>
 
 #### 6. Java Class Integration `WUIEnvironment.java`
@@ -362,11 +409,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         try {
             wuiEnvironment = new WUIEnvironment(this);
-            // Load demo page (comment out the following line after validating the test)
-            wuiEnvironment.openURL("file:///android_asset/libreries/wui-js/environment/demo/index.html");
+
+			// Load demo page (comment out the following line after validating the test)
+            wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
             // Load start page (uncomment the following line after validating the test)
 			//wuiEnvironment.openURL("file:///android_asset/pages/index.html");
-            // Enable Deep Link requests when the app opens
+
+			// Enable Deep Link requests when the app opens
             wuiEnvironment.saveDeepLink(getIntent());
         } catch (JSONException e) {
             e.printStackTrace();
@@ -399,7 +448,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 
 | Constructor | Description |
 | ----------- | ----------- |
-| `WUIEnvironment(viewController: UIViewController[, developMode: Bool])` | Initializes the WUI environment. `developMode = true` allows SSL with untrusted certificates and enables debug logging. |
+| `WUIEnvironment(viewController: UIViewController[, developMode: Bool])` | Initializes the WUI environment. `developMode = true` allows SSL with untrusted certificates and enables debug logging. **Do not use `true` in production** — it disables certificate validation for the entire WKWebView. |
 
 <a name="ios-methods"></a>
 
@@ -448,7 +497,7 @@ Events are callbacks that the native side sends to JavaScript when an asynchrono
 Clone the repository from GitHub if it has not been cloned previously:
 
 ```bash
-git clone https://github.com/wui-is/wuijs-environment-lib.git
+git clone https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -502,6 +551,10 @@ To add a color set in Xcode: open `Assets.xcassets`, click **+** → **Color Set
 > [!WARNING]
 > All color sets used by the application must be defined. If a named color is not found in `Assets.xcassets`, `UIColor(named:)` returns `nil` and the affected bar defaults to white.
 
+> [!NOTE]
+> The **Light** colors are compatible with the **default** theme of the **WUIPluginThemes** plugin from the [wuijs-plugins-lib](https://github.com/wui-js/wuijs-plugins-lib) library.<br>
+> The **Dark** colors are suggested to be related to the application's accent color.
+
 <a name="ios-config-wui-environment-swift"></a>
 
 #### 4. Swift Class Integration `WUIEnvironment.swift`
@@ -528,14 +581,23 @@ The above ensures that the initialization examples work correctly.
 
 The name of the `packageApp.swift` file changes depending on the package name assigned to the project.
 
+Use `.onOpenURL` to intercept Deep Link URLs and forward them to the bridge via `NotificationCenter`. This is the correct place to handle URL opening in a SwiftUI app.
+
 ```swift
 import SwiftUI
+
+extension Notification.Name {
+    static let wuiDeepLink = Notification.Name("WUIDeepLink")
+}
 
 @main
 struct packageApp: App {
     var body: some Scene {
         WindowGroup {
             MainView()
+                .onOpenURL { url in
+                    NotificationCenter.default.post(name: .wuiDeepLink, object: url)
+                }
         }
     }
 }
@@ -552,9 +614,19 @@ import SwiftUI
 import UIKit
 import WebKit
 
+extension Notification.Name {
+    static let wuiDeepLink = Notification.Name("WUIDeepLink")
+}
+
 struct MainView: View {
     var body: some View {
-        EnvironmentView().ignoresSafeArea()
+        EnvironmentView()
+            .ignoresSafeArea()
+            .onOpenURL { url in
+                // Forward Deep Link URLs to WUIEnvironment via NotificationCenter.
+                // .onOpenURL handles both app-launch and in-app URL delivery in SwiftUI.
+                NotificationCenter.default.post(name: .wuiDeepLink, object: url)
+            }
     }
 }
 
@@ -582,11 +654,15 @@ class EnvironmentViewController: UIViewController {
         wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/libraries/wui-js/environment/demo/index.html")
         // Load start page (uncomment the following line after validating the test)
         // wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/pages/index.html")
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
     }
 
-    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
-        // Enable Deep Link requests during app execution
-        wuiEnvironment?.saveDeepLink(url: contexts.first?.url)
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .wuiDeepLink, object: nil)
+    }
+
+    @objc private func handleDeepLink(_ notification: Notification) {
+        wuiEnvironment?.saveDeepLink(url: notification.object as? URL)
     }
 }
 ```
@@ -595,18 +671,41 @@ class EnvironmentViewController: UIViewController {
 
 ## Web Implementation
 
+The JavaScript class `WUIEnvironment` must be included in every HTML page that uses the bridge. Copy `wui-environment-0.1.js` to the project's assets folder and load it with a `<script>` tag before any bridge calls:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+</head>
+<body>
+    <script>
+        const env = new WUIEnvironment();
+        env.getDeviceInfo(function(info) {
+            console.log("Platform:", info.platform);
+        });
+    </script>
+</body>
+</html>
+```
+
+> [!NOTE]
+> The `src` path is relative to the HTML file. For Android, assets are loaded from `app/src/main/assets/`; for iOS, from the `assets/` folder added to the Xcode target. The recommended path `libraries/wui-js/environment/web/wui-environment-0.1.js` matches the structure described in the installation steps.
+
+**Bridge behavior by platform:**
+- **Android**: calls are **synchronous** — `Android.request()` returns the result immediately.
+- **iOS**: calls are **asynchronous** — the native side calls `WUIEnvironment.response()` when done.
+
+The JS library abstracts both into the same callback-based API.
+
 <a name="web-methods"></a>
-
-### JavaScript Class Methods
-
-| Method    | Return type | Description |
-| --------- | ----------- | ----------- |
-| `onReady` | `void`      | `onReady(done)`<br><br>Arguments:<br>**• done:** `function`, callback that receives the total number of requests made.<br><br>Executes the callback once all pending requests have received a response. Useful for synchronizing initial data loading before rendering the UI. |
 
 ### JavaScript Instance Methods
 
 | Method                  | Return type               | Description |
 | ----------------------- |---------------------------| ----------- |
+| `onReady`               | `void`                    | `onReady = done`<br><br>Arguments:<br>**• done:** `function`, callback that receives the total number of requests made.<br><br>Property. Executes the callback once all pending bridge requests have received a response. If assigned after all requests have already resolved, fires immediately. |
 | `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground(done)`<br><br>Checks whether the application is in the foreground. |
 | `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo(done)`<br><br>Gets hardware information (UUID, model, platform, etc.). |
 | `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo(done)`<br><br>Gets screen metrics and navigation mode. |
@@ -627,9 +726,6 @@ class EnvironmentViewController: UIViewController {
 <a name="web-js-usage"></a>
 
 ### JavaScript Usage
-
-All bridge calls on iOS are asynchronous — the native side responds via `WUIEnvironment.response()` after the native operation completes.
-The JavaScript library abstracts this into Promises:
 
 ```javascript
 const env = new WUIEnvironment();
@@ -656,9 +752,9 @@ env.getCurrentPosition(function(position) {
     }
 });
 
-env.onReady(function(count) {
+env.onReady = function(count) {
     console.log("All", count, "requests resolved");
-});
+};
 
 // Configure event handlers before loading the first page
 env.onDownloadFile = function(args) {
@@ -670,4 +766,4 @@ env.onReceiveDeepLink = function(url) {
 ```
 
 > [!NOTE]
-> When testing `getCurrentPosition` on the iOS Simulator, a simulated location must be configured: **Simulator menu → Features → Location**, on the Android Simulator, it must be configured in: **Simulator menu → Extended controls → Location**
+> When testing `getCurrentPosition` on the Android Simulator, a simulated location must be configured: **Simulator menu → Extended controls → Location**, on the iOS Simulator, it must be configured in: **Simulator menu → Features → Location**
