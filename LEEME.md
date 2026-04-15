@@ -35,20 +35,21 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 		5.   [Configuración de Colores](#android-config-colors)
 		6.   [Integración de la clase Java](#android-config-wui-environment-java)
 		7.   [Integración de la calse JavaScript](#android-config-wui-environment-js)
-		8.   [Inicialización](#android-config-mainactivity)
-	*   [Uso en JavaScript para Android](#android-js-usage)
+		8.   [Inicialización del MainActivity](#android-config-mainactivity)
 *   [Implementación en iOS](#ios)
 	*   [Constructor Swift](#ios-constructor)
 	*   [Métodos Swift](#ios-methods)
 	*   [Eventos iOS](#ios-events)
 	*   [Instalación y Configuración](#ios-install)
 		1.   [Clonar la librería](#ios-clone)
-		2.   [Integración de la clase Swift](#ios-config-wui-environment-swift)
-		3.   [Configuración de Permisos](#ios-config-permissions)
-		4.   [Inicialización](#ios-config-viewcontroller)
-	*   [Uso en JavaScript para iOS](#ios-js-usage)
+		2.   [Configuración de Permisos](#ios-config-permissions)
+		3.   [Integración de la clase Swift](#ios-config-wui-environment-swift)
+		4.   [Integración de la calse JavaScript](#ios-config-wui-environment-js)
+		5.   [Inicialización del PackageApp](#ios-config-packageapp)
+		6.   [Inicialización del MainView](#ios-config-mainview)
 *   [Implementación en Web](#web)
 	*   [Métodos JavaScript](#web-methods)
+	*   [Uso JavaScript](#web-js-usage)
 
 <a name="overview"></a>
 
@@ -338,22 +339,31 @@ Lo anterior asegura que los ejemplos de inicialización funcionen correctamente.
 
 <a name="android-config-mainactivity"></a>
 
-#### 8. Inicialización en `MainActivity.java`
+#### 8. Inicialización del MainActivity `MainActivity.java`
 
 ```java
+package YOUR.PACKAGE.NAME;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class MainActivity extends AppCompatActivity {
-    private WUIEnvironment wuiEnvironment;
+
+	private WUIEnvironment wuiEnvironment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
             wuiEnvironment = new WUIEnvironment(this);
-            // Carga página demo
-			// Comenta la siguiente línea después de validar la prueba
+            // Carga página demo (comenta la siguiente línea después de validar la prueba)
             wuiEnvironment.openURL("file:///android_asset/libreries/wui-js/environment/demo/index.html");
-            // Carga página inicial
-			// Descomenta la siguiente línea después de validar la prueba
+            // Carga página inicial (descomenta la siguiente línea después de validar la prueba)
             //wuiEnvironment.openURL("file:///android_asset/pages/index.html");
             // Habilitar peticiones Deep Link durante la apertura de la app
             wuiEnvironment.saveDeepLink(getIntent());
@@ -374,32 +384,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-```
-
-<a name="android-js-usage"></a>
-
-### Uso en JavaScript para Android
-
-Por medio del objeto global `Android` proporcionado por el WebView es posible invocar cualquier función del bridge:
-
-```javascript
-// Ejemplo: Obtener información de pantalla
-const display = JSON.parse(Android.request(JSON.stringify({ func: "getDisplayInfo" })));
-console.log("Modo de navegación:", display.navigationMode);
-```
-
-Para el manejo de eventos enviados desde Java, se configuran los handlers en la instancia de `WUIEnvironment` antes de cargar la primera página:
-
-```javascript
-const env = new WUIEnvironment();
-
-env.onDownloadFile = function(args) {
-    console.log("Descargado:", args.filename, args.mimetype, args.uri);
-};
-
-env.onReceiveDeepLink = function(url) {
-    console.log("Deep Link recibido:", url);
-};
 ```
 
 <a name="ios"></a>
@@ -447,10 +431,10 @@ La implementación en iOS utiliza como motor de renderización WebKit (WKWebView
 
 Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acción asíncrona se completa. Se deben configurar en la instancia de `WUIEnvironment` antes de cargar la primera página.
 
-| Evento           | Argumentos                                       | Descripción |
-| ---------------- | ------------------------------------------------ | ----------- |
-| `onDownloadFile` | `filename`, `mimetype`, `uri`                    | Se dispara cuando se completa la descarga de un archivo iniciada desde el WebView. El archivo se guarda en `Documents/Downloads/` dentro del sandbox de la app y se abre mediante `UIActivityViewController`. Requiere iOS 14.5+ para `WKDownloadDelegate`; en versiones anteriores se usa `URLSession` como fallback. |
-| `onReceiveDeepLink` | `url`                                         | Se dispara cuando la aplicación recibe una URL de Deep Link (al abrir o durante la ejecución). |
+| Evento              | Argumentos                    | Descripción |
+| ------------------- | ----------------------------- | ----------- |
+| `onDownloadFile`    | `filename`, `mimetype`, `uri` | Se dispara cuando se completa la descarga de un archivo iniciada desde el WebView. El archivo se guarda en `Documents/Downloads/` dentro del sandbox de la app y se abre mediante `UIActivityViewController`. Requiere iOS 14.5+ para `WKDownloadDelegate`; en versiones anteriores se usa `URLSession` como fallback. |
+| `onReceiveDeepLink` | `url`                         | Se dispara cuando la aplicación recibe una URL de Deep Link (al abrir o durante la ejecución). |
 
 <a name="ios-install"></a>
 
@@ -466,26 +450,20 @@ Clonar el repositorio desde GitHub si aún no se ha realizado:
 git clone https://github.com/wui-is/wuijs-environment-lib.git
 ```
 
-<a name="ios-config-wui-environment-swift"></a>
-
-#### 2. Integración de la clase Swift `WUIEnvironment.swift`
-
-Copiar el archivo `src/wui-js/environment/ios/WUIEnvironment.swift` en el proyecto Xcode.
-
 > [!NOTE]
-> Agregar el archivo a la fase **Sources** del target en Xcode. No agregar como bundle resource.
+> El repositorio contendrá las 3 clases, Java para Android, Swift para iOS y JavaScript como contraparte Web.
 
 <a name="ios-config-permissions"></a>
 
-#### 3. Configuración de Permisos (`Info.plist`)
+#### 2. Configuración de Permisos (`Info.plist`)
 
 Si el proyecto utiliza `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), agregar las claves de descripción de uso directamente en los build settings del target:
 
-| Clave en Build Settings | Requerida para |
-| --- | --- |
+| Clave en Build Settings                             | Requerida para |
+| --------------------------------------------------- | -------------- |
 | `INFOPLIST_KEY_NSLocationWhenInUseUsageDescription` | `getCurrentPosition()` |
-| `INFOPLIST_KEY_NSCameraUsageDescription` | `getPermissionsStatus()` (cámara) |
-| `INFOPLIST_KEY_NSContactsUsageDescription` | `getPermissionsStatus()` (contactos) |
+| `INFOPLIST_KEY_NSCameraUsageDescription`            | `getPermissionsStatus()` (cámara) |
+| `INFOPLIST_KEY_NSContactsUsageDescription`          | `getPermissionsStatus()` (contactos) |
 
 > [!WARNING]
 > Sin `NSLocationWhenInUseUsageDescription`, iOS ignora silenciosamente `requestWhenInUseAuthorization()` — el diálogo de permiso nunca aparece y `getCurrentPosition` nunca entrega un resultado.
@@ -501,12 +479,73 @@ Si el proyecto utiliza un `Info.plist` manual, agregar las claves directamente e
 <string>Requerido para verificar el estado del permiso de contactos.</string>
 ```
 
-<a name="ios-config-viewcontroller"></a>
+<a name="ios-config-wui-environment-swift"></a>
 
-#### 4. Inicialización en el ViewController `ViewController.swift`
+#### 3. Integración de la clase Swift `WUIEnvironment.swift`
+
+Copiar el archivo `src/wui-js/environment/ios/WUIEnvironment.swift` en el proyecto Xcode.
+
+> [!NOTE]
+> Agregar el archivo a la fase **Sources** del target en Xcode. No agregar como bundle resource.
+
+<a name="ios-config-wui-environment-js"></a>
+
+#### 4. Integración de la calse JavaScript `wui-environment-0.1.js`
+
+Copiar el contenido del directorio `src/wui-js/environment/web/` al directorio `assets/` del proyecto en Xcode. Se recomienda la siguiente estructura:
+
+- `package/assets/libraries/wui-js/environment/web/wui-environment-0.1.js`
+- `package/assets/libraries/wui-js/environment/demo/index.html`
+
+Lo anterior asegura que los ejemplos de inicialización funcionen correctamente.
+
+<a name="ios-config-packageapp"></a>
+
+#### 5. Inicialización del PackageApp `packageApp.swift`
+
+El nombre del archivo `packageApp.swift` cambia dependiendo del nombre del paquete que se asignó al proyecto.
 
 ```swift
-class MyViewController: UIViewController {
+import SwiftUI
+
+@main
+struct packageApp: App {
+    var body: some Scene {
+        WindowGroup {
+            MainView()
+        }
+    }
+}
+```
+
+<a name="ios-config-mainview"></a>
+
+#### 6. Inicialización del MainView `MainView.swift`
+
+El nombre del archivo `MainView.swift` es opcoinal, no obstante, debe se coherente con el nombre de la función llamada desde `packageApp.swift`.
+
+```swift
+import SwiftUI
+import UIKit
+import WebKit
+
+struct MainView: View {
+    var body: some View {
+        EnvironmentView().ignoresSafeArea()
+    }
+}
+
+struct EnvironmentView: UIViewControllerRepresentable {
+
+    func makeUIViewController(context: Context) -> EnvironmentViewController {
+        EnvironmentViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: EnvironmentViewController, context: Context) {}
+}
+
+class EnvironmentViewController: UIViewController {
+
     private var wuiEnvironment: WUIEnvironment?
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -516,11 +555,9 @@ class MyViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         wuiEnvironment = WUIEnvironment(viewController: self)
-        // Carga página demo
-        // Comenta la siguiente línea después de validar la prueba
-        wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/wui-js/environment/demo/index.html")
-        // Carga página inicial
-        // Descomenta la siguiente línea después de validar la prueba
+        // Carga página demo (comenta la siguiente línea después de validar la prueba)
+        wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/libraries/wui-js/environment/demo/index.html")
+        // Carga página inicial (descomenta la siguiente línea después de validar la prueba)
         // wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/pages/index.html")
     }
 
@@ -530,53 +567,6 @@ class MyViewController: UIViewController {
     }
 }
 ```
-
-<a name="ios-js-usage"></a>
-
-### Uso en JavaScript para iOS
-
-Todas las llamadas al bridge en iOS son asíncronas — el lado nativo responde mediante `WUIEnvironment.response()` una vez completada la operación. La librería JavaScript abstrae esto en Promises:
-
-```javascript
-const env = new WUIEnvironment();
-
-// Configurar los handlers de eventos antes de cargar la primera página
-env.onDownloadFile = function(args) {
-    console.log("Descargado:", args.filename, args.mimetype, args.uri);
-};
-env.onReceiveDeepLink = function(url) {
-    console.log("Deep Link recibido:", url);
-};
-
-// Usa onReady para esperar a que todas las solicitudes iniciales se resuelvan
-env.getDeviceInfo(function(info) {
-    console.log("Plataforma:", info.platform); // "iOS"
-});
-
-env.getDisplayInfo(function(display) {
-    console.log("Notch:", display.notch);
-    console.log("Altura status bar:", display.statusbarHeight);
-});
-
-env.getConnectionStatus(function(connected) {
-    console.log("Conectado:", connected);
-});
-
-env.getCurrentPosition(function(position) {
-    if (position.error) {
-        console.error("Error de ubicación:", position.error);
-    } else {
-        console.log("Lat:", position.latitude, "Lon:", position.longitude);
-    }
-});
-
-env.onReady(function(count) {
-    console.log("Todas las", count, "solicitudes resueltas");
-});
-```
-
-> [!NOTE]
-> Al probar `getCurrentPosition` en el simulador de iOS, se debe configurar una ubicación simulada: **menú del Simulador → Features → Location**.
 
 <a name="web"></a>
 
@@ -610,3 +600,50 @@ env.onReady(function(count) {
 | `openURL`               | `void`                    | `openURL(url)`<br><br>Argumentos:<br>**• url:** `string`, la URL de destino o ruta de asset local.<br><br>Abre un recurso local en el WebView o un enlace externo. |
 | `readDeepLink`          | `Promise<string>`         | `readDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Lee la última URL de Deep Link recibida. |
 | `clearDeepLink`         | `void`                    | `clearDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Limpia la URL de Deep Link almacenada. |
+
+<a name="web-js-usage"></a>
+
+### Uso JavaScript
+
+Todas las llamadas al bridge en iOS son asíncronas — el lado nativo responde mediante `WUIEnvironment.response()` una vez completada la operación. La librería JavaScript abstrae esto en Promises:
+
+```javascript
+const env = new WUIEnvironment();
+
+// Usa onReady para esperar a que todas las solicitudes iniciales se resuelvan
+env.getDeviceInfo(function(info) {
+    console.log("Plataforma:", info.platform);
+});
+
+env.getDisplayInfo(function(display) {
+    console.log("Notch:", display.notch);
+    console.log("Altura status bar:", display.statusbarHeight);
+});
+
+env.getConnectionStatus(function(connected) {
+    console.log("Conectado:", connected);
+});
+
+env.getCurrentPosition(function(position) {
+    if (position.error) {
+        console.error("Error de ubicación:", position.error);
+    } else {
+        console.log("Lat:", position.latitude, "Lon:", position.longitude);
+    }
+});
+
+env.onReady(function(count) {
+    console.log("Todas las", count, "solicitudes resueltas");
+});
+
+// Configurar los handlers de eventos antes de cargar la primera página
+env.onDownloadFile = function(args) {
+    console.log("Descargado:", args.filename, args.mimetype, args.uri);
+};
+env.onReceiveDeepLink = function(url) {
+    console.log("Deep Link recibido:", url);
+};
+```
+
+> [!NOTE]
+> Al probar `getCurrentPosition` en el simulador de iOS, se debe configurar una ubicación simulada: **menú del Simulador → Features → Location**.
