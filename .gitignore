@@ -1,18 +1,20 @@
-# OS generated files
+# OS
 
 ._*
 .DS_Store
 .DS_Store?
 Thumbs.db
 
-# Editor generated files
+# Inner
 
 .vscode
 .claude
+.npmignore
 CLAUDE.md
 MEMORY.md
 NOTES.md
+NPM.md
 
-# Trash develop
+# Trash
 
 _*

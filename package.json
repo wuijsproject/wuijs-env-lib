@@ -1,0 +1,39 @@
+{
+	"name": "@wui-js/environment",
+	"version": "0.1.0",
+	"license": "Apache-2.0",
+	"author": "Sergio E. Belmar V. <wuijs.project@gmail.com>",
+	"description": "WUI/JS Environment Lib — Native bridge for WebView/WKWebView (web layer)",
+	"keywords": [
+		"ui",
+		"bridge",
+		"hybrid",
+		"java",
+		"swift",
+		"javascript",
+		"android",
+		"ios",
+		"wui",
+		"environment",
+		"library"
+	],
+	"homepage": "https://wuijs.dev",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/wui-js/wuijs-environment-lib.git"
+	},
+	"bugs": {
+		"url": "https://github.com/wui-js/wuijs-environment-lib/issues"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"files": [
+		"web/",
+		"demo/"
+	],
+	"scripts": {
+		"prepack": "cp README.md _README.bak && cp NPM.md README.md && cp -r src/wui-js/environment/. .",
+		"postpack": "mv _README.bak README.md && ls src/wui-js/environment/ | grep -vE '^LICENSE$' | xargs rm -rf"
+	}
+}

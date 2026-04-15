@@ -55,7 +55,7 @@ Author: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 
 ## Overview
 
-WUI/JS Environment is a bridge between web environments and native web rendering engines via JavaScript, designed to facilitate the creation of hybrid applications. It provides access to hardware instances and the file system directly from JavaScript.
+WUI/JS Environment Lib is a bridge between web environments and native web rendering engines via JavaScript, designed to facilitate the creation of hybrid applications. It provides access to hardware instances and the file system directly from JavaScript.
 It is currently available for Android in Java via WebView and for iOS in Swift via WebKit.
 
 <a name="project"></a>
