@@ -26,6 +26,7 @@ Author: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 *   [Android Implementation](#android)
 	*   [Java Constructor](#android-constructor)
 	*   [Java Methods](#android-methods)
+	*   [Android Events](#android-events)
 	*   [Installation and Setup](#android-install)
 		1.   [Clone the library](#android-clone)
 		2.   [Project Configuration](#android-config-project)
@@ -166,7 +167,7 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 #### 2. Project Configuration
 
-Make sure the repositories are correctly defined:
+Ensure the repositories are correctly defined:
 
 ##### **settings.gradle.kts (Kotlin)**
 
@@ -196,7 +197,7 @@ dependencyResolutionManagement {
 
 #### 3. Module Configuration (`app/build.gradle.kts`)
 
-Make sure `buildConfig` is enabled with the value `true`:
+Ensure `buildConfig` is enabled with the value `true`:
 
 ##### **build.gradle.kts (Kotlin)**
 
@@ -224,7 +225,7 @@ android {
 
 **Add Permissions**
 
-Make sure the application has the necessary permissions. The bridge requires at least Internet and Network State.
+Ensure the application has the necessary permissions. The bridge requires at least Internet and Network State.
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
@@ -254,7 +255,7 @@ To enable Deep Link in the application, add the following statement to the `appl
 ```
 
 > [!IMPORTANT]
-> Use `android:scheme` to assign the application scheme. This will allow access via a URL in the browser using the scheme as the protocol.
+> The `android:scheme` attribute defines the application scheme. It allows access to the application via a URL in the browser using the scheme as the protocol.
 > (e.g.: app_scheme://url_resource)
 
 **File Sharing Configuration**
@@ -304,10 +305,10 @@ The library uses these keys for the status and navigation bar styles:
 
 #### 6. Java Class Integration `WUIEnvironment.java`
 
-Copy the file `src/wui-js/environment/android/WUIEnvironment.java` to your project's source folder (e.g.: `app/src/main/java/your/package/name/` if the defined package ID is `your.package.name`).
+Copy the file `src/wui-js/environment/android/WUIEnvironment.java` to the project's source folder (e.g.: `app/src/main/java/your/package/name/` if the defined package ID is `your.package.name`).
 
 > [!IMPORTANT]
-> You must edit the first line of the file to match your application's package ID:
+> The first line of the file must be edited to match the application's package ID:
 
 ```java
 package YOUR.PACKAGE.NAME; // Update this to match your project package
@@ -317,12 +318,12 @@ package YOUR.PACKAGE.NAME; // Update this to match your project package
 
 #### 7. JavaScript Class Integration `wui-environment-0.1.js`
 
-Copy the contents of the `src/web/` directory to the `assets/` directory of the Android project. The following structure is recommended:
+Copy the contents of the `src/wui-js/environment/web/` directory to the `assets/` directory of the Android project. The following structure is recommended:
 
 - `app/src/main/assets/libraries/wui-js/environment/web/wui-environment-0.1.js`
 - `app/src/main/assets/libraries/wui-js/environment/demo/index.html`
 
-This will ensure that the initialization examples work correctly.
+The above ensures that the initialization examples work correctly.
 
 <a name="android-config-mainactivity"></a>
 
@@ -364,11 +365,22 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 
+<a name="android-events"></a>
+
+### Android Events
+
+Events are callbacks that the native side sends to JavaScript when an asynchronous action completes. They must be configured on the `WUIEnvironment` instance before loading the first page.
+
+| Event               | Arguments                     | Description |
+| ------------------- | ----------------------------- | ----------- |
+| `onDownloadFile`    | `filename`, `mimetype`, `uri` | Fired when a file download initiated from the WebView completes. The file is saved to the device's public `Downloads` directory and automatically opened with the corresponding application. |
+| `onReceiveDeepLink` | `url`                         | Fired when the application receives a Deep Link URL (on launch or while running). |
+
 <a name="android-js-usage"></a>
 
 ### JavaScript Usage for Android
 
-The native way to handle system functions is via the global `Android` object provided by the WebView. Through this object you can call any bridge function using `Android.request()`:
+Any bridge function can be invoked through the global `Android` object provided by the WebView:
 
 ```javascript
 // Example: Get display information
@@ -376,14 +388,17 @@ const display = JSON.parse(Android.request(JSON.stringify({ func: "getDisplayInf
 console.log("Navigation mode:", display.navigationMode);
 ```
 
-However, handling events sent from Java requires the global `WUIEnvironment` object provided by the JavaScript library via the public method `response()`:
+To handle events sent from Java, configure the event handlers on the `WUIEnvironment` instance before loading the first page:
 
 ```javascript
-// Handling events sent from Java
-WUIEnvironment.response = function(args) {
-    if (args.event == "onReceiveDeepLink") {
-        console.log("Deep Link received:", args.url);
-    }
+const env = new WUIEnvironment();
+
+env.onDownloadFile = function(args) {
+    console.log("Downloaded:", args.filename, args.mimetype, args.uri);
+};
+
+env.onReceiveDeepLink = function(url) {
+    console.log("Deep Link received:", url);
 };
 ```
 
@@ -435,21 +450,7 @@ Events are callbacks that the native side sends to JavaScript when an asynchrono
 | Event            | Arguments                                        | Description |
 | ---------------- | ------------------------------------------------ | ----------- |
 | `onDownloadFile` | `filename`, `mimetype`, `uri`                    | Fired when a file download initiated from the WebView completes. The file is saved to `Documents/Downloads/` inside the app sandbox and opened via `UIActivityViewController`. Requires iOS 14.5+ for `WKDownloadDelegate`; a `URLSession` fallback is used on earlier versions. |
-| `onReceiveDeepLink` | `url`                                         | Fired when the app receives a Deep Link URL (on launch or while running). |
-
-**Example:**
-
-```javascript
-const env = new WUIEnvironment();
-
-env.onDownloadFile = function(args) {
-    console.log("Downloaded:", args.filename, args.mimetype, args.uri);
-};
-
-env.onReceiveDeepLink = function(url) {
-    console.log("Deep Link received:", url);
-};
-```
+| `onReceiveDeepLink` | `url`                                         | Fired when the application receives a Deep Link URL (on launch or while running). |
 
 <a name="ios-install"></a>
 
@@ -459,7 +460,7 @@ env.onReceiveDeepLink = function(url) {
 
 #### 1. Clone the library
 
-If you haven't done so already, clone the repository from GitHub:
+Clone the repository from GitHub if it has not been cloned previously:
 
 ```bash
 git clone https://github.com/wui-is/wuijs-environment-lib.git
@@ -469,7 +470,7 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 #### 2. Swift Class Integration `WUIEnvironment.swift`
 
-Copy the file `src/wui-js/environment/ios/WUIEnvironment.swift` into your Xcode project.
+Copy the file `src/wui-js/environment/ios/WUIEnvironment.swift` into the Xcode project.
 
 > [!NOTE]
 > Add the file to the Xcode target's **Sources** build phase. Do not add it as a bundle resource.
@@ -478,7 +479,7 @@ Copy the file `src/wui-js/environment/ios/WUIEnvironment.swift` into your Xcode 
 
 #### 3. Permissions Configuration (`Info.plist`)
 
-If your project uses `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), add the required usage description keys directly to the target's build settings:
+If the project uses `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), add the required usage description keys directly to the target's build settings:
 
 | Build Setting Key | Required for |
 | --- | --- |
@@ -489,7 +490,7 @@ If your project uses `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), add the requir
 > [!WARNING]
 > Without `NSLocationWhenInUseUsageDescription`, iOS silently ignores `requestWhenInUseAuthorization()` — the permission dialog never appears and `getCurrentPosition` never delivers a result.
 
-If your project uses a manual `Info.plist`, add the keys directly to that file:
+If the project uses a manual `Info.plist`, add the keys directly to that file:
 
 ```xml
 <key>NSLocationWhenInUseUsageDescription</key>
@@ -502,7 +503,7 @@ If your project uses a manual `Info.plist`, add the keys directly to that file:
 
 <a name="ios-config-viewcontroller"></a>
 
-#### 4. Initialization in your ViewController `ViewController.swift`
+#### 4. Initialization in the ViewController `ViewController.swift`
 
 ```swift
 class MyViewController: UIViewController {
@@ -539,7 +540,7 @@ All bridge calls on iOS are asynchronous — the native side responds via `WUIEn
 ```javascript
 const env = new WUIEnvironment();
 
-// Set event handlers before loading the first page
+// Configure event handlers before loading the first page
 env.onDownloadFile = function(args) {
     console.log("Downloaded:", args.filename, args.mimetype, args.uri);
 };
@@ -575,7 +576,7 @@ env.onReady(function(count) {
 ```
 
 > [!NOTE]
-> When testing `getCurrentPosition` on the iOS Simulator, you must configure a simulated location: **Simulator menu → Features → Location**.
+> When testing `getCurrentPosition` on the iOS Simulator, a simulated location must be configured: **Simulator menu → Features → Location**.
 
 <a name="web"></a>
 

@@ -26,6 +26,7 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 *   [Implementación en Android](#android)
 	*   [Constructor Java](#android-constructor)
 	*   [Métodos Java](#android-methods)
+	*   [Eventos Android](#android-events)
 	*   [Instalación y Configuración](#android-install)
 		1.   [Clonar la librería](#android-clone)
 		2.   [Configuración del Proyecto](#android-config-project)
@@ -254,7 +255,7 @@ Para habilitar el Deep Link en la aplicación, agregar a la sección `applicatio
 ```
 
 > [!IMPORTANT]
-> Utiliza `android:scheme` para asignar el esquema de la aplicación. Esto permitirá acceder mediante una dirección URL en el navegador utilizando el esquema como protocolo.
+> El atributo `android:scheme` define el esquema de la aplicación. Permite acceder a la aplicación mediante una dirección URL en el navegador utilizando el esquema como protocolo.
 > (ej: esquema_app://recurso_url)
 
 **Configuración de intercambio de archivos**
@@ -304,10 +305,10 @@ La librería utiliza estas llaves para el estilo de las barras de estado y naveg
 
 #### 6. Integración de la clase Java `WUIEnvironment.java`
 
-Copiar el archivo `src/wui-js/environment/android/WUIEnvironment.java` a la carpeta de fuentes de tu proyecto (ej: `app/src/main/java/your/package/name/` si el ID del paquete definido fuese `your.package.name`).
+Copiar el archivo `src/wui-js/environment/android/WUIEnvironment.java` a la carpeta de fuentes del proyecto (ej: `app/src/main/java/your/package/name/` si el ID del paquete definido fuese `your.package.name`).
 
 > [!IMPORTANT]
-> Debes editar la primera línea del archivo para que coincida con el ID del paquete de la aplicación:
+> Se debe editar la primera línea del archivo para que coincida con el ID del paquete de la aplicación:
 
 ```java
 package YOUR.PACKAGE.NAME; // Update this to match your project package
@@ -317,12 +318,12 @@ package YOUR.PACKAGE.NAME; // Update this to match your project package
 
 #### 7. Integración de la calse JavaScript `wui-environment-0.1.js`
 
-Copia el contenido del directorio `src/web/` al directorio `assets/` del proyecto Android. Se recomienda utilizar la siguiente estructura:
+Copiar el contenido del directorio `src/wui-js/environment/web/` al directorio `assets/` del proyecto Android. Se recomienda la siguiente estructura:
 
 - `app/src/main/assets/libraries/wui-js/environment/web/wui-environment-0.1.js`
 - `app/src/main/assets/libraries/wui-js/environment/demo/index.html`
 
-Esto asegurará que los ejemplos de inicialización funcionen correctamente.
+Lo anterior asegura que los ejemplos de inicialización funcionen correctamente.
 
 <a name="android-config-mainactivity"></a>
 
@@ -364,11 +365,22 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 
+<a name="android-events"></a>
+
+### Eventos Android
+
+Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acción asíncrona se completa. Se deben configurar en la instancia de `WUIEnvironment` antes de cargar la primera página.
+
+| Evento              | Argumentos                    | Descripción |
+| ------------------- | ----------------------------- | ----------- |
+| `onDownloadFile`    | `filename`, `mimetype`, `uri` | Se dispara cuando se completa la descarga de un archivo iniciada desde el WebView. El archivo se guarda en el directorio público `Downloads` del dispositivo y se abre automáticamente con la aplicación correspondiente. |
+| `onReceiveDeepLink` | `url`                         | Se dispara cuando la aplicación recibe una URL de Deep Link (al abrir o durante la ejecución). |
+
 <a name="android-js-usage"></a>
 
 ### Uso en JavaScript para Android
 
-El modo nativo de manejo de funciones de sistema es mediante el objeto global `Android` proporcionado por el WebView. Pro medio de este objeto se puede llamar a cualquier función del bridge usando `Android.request()`:
+Por medio del objeto global `Android` proporcionado por el WebView es posible invocar cualquier función del bridge:
 
 ```javascript
 // Ejemplo: Obtener información de pantalla
@@ -376,14 +388,17 @@ const display = JSON.parse(Android.request(JSON.stringify({ func: "getDisplayInf
 console.log("Modo de navegación:", display.navigationMode);
 ```
 
-No obstante, para manejo de eventos enviados desde Java se requiere el objeto global `WUIEnvironment` proporcionado por la librería JavaScript mediante el método público `response()`:
+Para el manejo de eventos enviados desde Java, se configuran los handlers en la instancia de `WUIEnvironment` antes de cargar la primera página:
 
 ```javascript
-// Manejo de eventos enviados desde Java
-WUIEnvironment.response = function(args) {
-    if (args.event == "onReceiveDeepLink") {
-        console.log("Deep Link recibido:", args.url);
-    }
+const env = new WUIEnvironment();
+
+env.onDownloadFile = function(args) {
+    console.log("Descargado:", args.filename, args.mimetype, args.uri);
+};
+
+env.onReceiveDeepLink = function(url) {
+    console.log("Deep Link recibido:", url);
 };
 ```
 
@@ -435,21 +450,7 @@ Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acc
 | Evento           | Argumentos                                       | Descripción |
 | ---------------- | ------------------------------------------------ | ----------- |
 | `onDownloadFile` | `filename`, `mimetype`, `uri`                    | Se dispara cuando se completa la descarga de un archivo iniciada desde el WebView. El archivo se guarda en `Documents/Downloads/` dentro del sandbox de la app y se abre mediante `UIActivityViewController`. Requiere iOS 14.5+ para `WKDownloadDelegate`; en versiones anteriores se usa `URLSession` como fallback. |
-| `onReceiveDeepLink` | `url`                                         | Se dispara cuando la app recibe una URL de Deep Link (al abrir o durante la ejecución). |
-
-**Ejemplo:**
-
-```javascript
-const env = new WUIEnvironment();
-
-env.onDownloadFile = function(args) {
-    console.log("Descargado:", args.filename, args.mimetype, args.uri);
-};
-
-env.onReceiveDeepLink = function(url) {
-    console.log("Deep Link recibido:", url);
-};
-```
+| `onReceiveDeepLink` | `url`                                         | Se dispara cuando la aplicación recibe una URL de Deep Link (al abrir o durante la ejecución). |
 
 <a name="ios-install"></a>
 
@@ -459,7 +460,7 @@ env.onReceiveDeepLink = function(url) {
 
 #### 1. Clonar la librería
 
-Si aún no lo has hecho, clona el repositorio desde GitHub:
+Clonar el repositorio desde GitHub si aún no se ha realizado:
 
 ```bash
 git clone https://github.com/wui-is/wuijs-environment-lib.git
@@ -469,16 +470,16 @@ git clone https://github.com/wui-is/wuijs-environment-lib.git
 
 #### 2. Integración de la clase Swift `WUIEnvironment.swift`
 
-Copia el archivo `src/wui-js/environment/ios/WUIEnvironment.swift` en tu proyecto Xcode.
+Copiar el archivo `src/wui-js/environment/ios/WUIEnvironment.swift` en el proyecto Xcode.
 
 > [!NOTE]
-> Agrega el archivo a la fase **Sources** del target en Xcode. No lo agregues como bundle resource.
+> Agregar el archivo a la fase **Sources** del target en Xcode. No agregar como bundle resource.
 
 <a name="ios-config-permissions"></a>
 
 #### 3. Configuración de Permisos (`Info.plist`)
 
-Si el proyecto usa `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), agrega las claves de descripción de uso directamente en los build settings del target:
+Si el proyecto utiliza `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), agregar las claves de descripción de uso directamente en los build settings del target:
 
 | Clave en Build Settings | Requerida para |
 | --- | --- |
@@ -489,7 +490,7 @@ Si el proyecto usa `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), agrega las clave
 > [!WARNING]
 > Sin `NSLocationWhenInUseUsageDescription`, iOS ignora silenciosamente `requestWhenInUseAuthorization()` — el diálogo de permiso nunca aparece y `getCurrentPosition` nunca entrega un resultado.
 
-Si el proyecto usa un `Info.plist` manual, agrega las claves directamente en ese archivo:
+Si el proyecto utiliza un `Info.plist` manual, agregar las claves directamente en ese archivo:
 
 ```xml
 <key>NSLocationWhenInUseUsageDescription</key>
@@ -502,7 +503,7 @@ Si el proyecto usa un `Info.plist` manual, agrega las claves directamente en ese
 
 <a name="ios-config-viewcontroller"></a>
 
-#### 4. Inicialización en tu ViewController `ViewController.swift`
+#### 4. Inicialización en el ViewController `ViewController.swift`
 
 ```swift
 class MyViewController: UIViewController {
@@ -539,7 +540,7 @@ Todas las llamadas al bridge en iOS son asíncronas — el lado nativo responde 
 ```javascript
 const env = new WUIEnvironment();
 
-// Configura los handlers de eventos antes de cargar la primera página
+// Configurar los handlers de eventos antes de cargar la primera página
 env.onDownloadFile = function(args) {
     console.log("Descargado:", args.filename, args.mimetype, args.uri);
 };
@@ -575,7 +576,7 @@ env.onReady(function(count) {
 ```
 
 > [!NOTE]
-> Al probar `getCurrentPosition` en el simulador de iOS, debes configurar una ubicación simulada: **menú del Simulador → Features → Location**.
+> Al probar `getCurrentPosition` en el simulador de iOS, se debe configurar una ubicación simulada: **menú del Simulador → Features → Location**.
 
 <a name="web"></a>
 
