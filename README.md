@@ -146,6 +146,17 @@ The Android implementation uses WebView as its rendering engine.
 | `readDeepLink`          | `String`     | `readDeepLink()`<br><br>Returns the last stored Deep Link URL, or `null` if none is stored. |
 | `clearDeepLink`         | `void`       | `clearDeepLink()`<br><br>Clears the stored Deep Link URL. |
 
+<a name="android-events"></a>
+
+### Android Events
+
+Events are callbacks that the native side sends to JavaScript when an asynchronous action completes. They must be configured on the `WUIEnvironment` instance before loading the first page.
+
+| Event               | Arguments                     | Description |
+| ------------------- | ----------------------------- | ----------- |
+| `onDownloadFile`    | `filename`, `mimetype`, `uri` | Fired when a file download initiated from the WebView completes. The file is saved to the device's public `Downloads` directory and automatically opened with the corresponding application. |
+| `onReceiveDeepLink` | `url`                         | Fired when the application receives a Deep Link URL (on launch or while running). |
+
 <a name="android-install"></a>
 
 ### Installation and Setup
@@ -364,17 +375,6 @@ public class MainActivity extends AppCompatActivity {
     }
 }
 ```
-
-<a name="android-events"></a>
-
-### Android Events
-
-Events are callbacks that the native side sends to JavaScript when an asynchronous action completes. They must be configured on the `WUIEnvironment` instance before loading the first page.
-
-| Event               | Arguments                     | Description |
-| ------------------- | ----------------------------- | ----------- |
-| `onDownloadFile`    | `filename`, `mimetype`, `uri` | Fired when a file download initiated from the WebView completes. The file is saved to the device's public `Downloads` directory and automatically opened with the corresponding application. |
-| `onReceiveDeepLink` | `url`                         | Fired when the application receives a Deep Link URL (on launch or while running). |
 
 <a name="android-js-usage"></a>
 

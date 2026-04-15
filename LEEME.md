@@ -146,6 +146,17 @@ La implementación en Android utiliza como motor de renderización WebView.
 | `readDeepLink`          | `String`        | `readDeepLink()`<br><br>Devuelve la última URL de Deep Link almacenada, o `null` si no hay ninguna. |
 | `clearDeepLink`         | `void`          | `clearDeepLink()`<br><br>Elimina la URL de Deep Link almacenada. |
 
+<a name="android-events"></a>
+
+### Eventos Android
+
+Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acción asíncrona se completa. Se deben configurar en la instancia de `WUIEnvironment` antes de cargar la primera página.
+
+| Evento              | Argumentos                    | Descripción |
+| ------------------- | ----------------------------- | ----------- |
+| `onDownloadFile`    | `filename`, `mimetype`, `uri` | Se dispara cuando se completa la descarga de un archivo iniciada desde el WebView. El archivo se guarda en el directorio público `Downloads` del dispositivo y se abre automáticamente con la aplicación correspondiente. |
+| `onReceiveDeepLink` | `url`                         | Se dispara cuando la aplicación recibe una URL de Deep Link (al abrir o durante la ejecución). |
+
 <a name="android-install"></a>
 
 ### Instalación y Configuración
@@ -364,17 +375,6 @@ public class MainActivity extends AppCompatActivity {
     }
 }
 ```
-
-<a name="android-events"></a>
-
-### Eventos Android
-
-Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acción asíncrona se completa. Se deben configurar en la instancia de `WUIEnvironment` antes de cargar la primera página.
-
-| Evento              | Argumentos                    | Descripción |
-| ------------------- | ----------------------------- | ----------- |
-| `onDownloadFile`    | `filename`, `mimetype`, `uri` | Se dispara cuando se completa la descarga de un archivo iniciada desde el WebView. El archivo se guarda en el directorio público `Downloads` del dispositivo y se abre automáticamente con la aplicación correspondiente. |
-| `onReceiveDeepLink` | `url`                         | Se dispara cuando la aplicación recibe una URL de Deep Link (al abrir o durante la ejecución). |
 
 <a name="android-js-usage"></a>
 
