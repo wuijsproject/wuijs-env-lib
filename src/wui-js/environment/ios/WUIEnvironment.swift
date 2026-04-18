@@ -48,6 +48,75 @@ class WUIEnvironment: NSObject {
     private func webViewInit() {
         let contentController = WKUserContentController()
         contentController.add(self, name: "request")
+        let xhrPatch = """
+            (function() {
+                let _seq = 0;
+                const _pending = {};
+                window._wuiXhrRespond = function(code, content) {
+                    const resolve = _pending[code];
+                    if (!resolve) return;
+                    delete _pending[code];
+                    resolve(content);
+                };
+                const _OrigXHR = window.XMLHttpRequest;
+                window.XMLHttpRequest = function() {
+                    let _isFile = false, _async = true, _url = '';
+                    let _onload = null, _onerror = null;
+                    let _status = 0, _responseText = '';
+                    let _native = null;
+                    const proxy = {
+                        get status()       { return _isFile ? _status : _native.status; },
+                        get responseText() { return _isFile ? _responseText : _native.responseText; },
+                        get onload()       { return _onload; },
+                        set onload(fn)     { _onload = fn; },
+                        get onerror()      { return _onerror; },
+                        set onerror(fn)    { _onerror = fn; },
+                        overrideMimeType() {},
+                        open(method, url, async) {
+                            try { url = new URL(url, window.location.href).href; } catch(e) {}
+                            _url = url; _async = (async !== false); _isFile = url.startsWith('file:');
+                            if (_isFile) { if (!_async) _status = 200; }
+                            else {
+                                if (!_native) _native = new _OrigXHR();
+                                _native.open(method, url, async);
+                                _native.onload  = function() { if (typeof _onload  === 'function') _onload.call(proxy); };
+                                _native.onerror = function(e){ if (typeof _onerror === 'function') _onerror.call(proxy, e); };
+                            }
+                        },
+                        send() {
+                            if (!_isFile) { if (_native) _native.send(); return; }
+                            if (!_async)  { return; }
+                            const code = ++_seq;
+                            _pending[code] = function(text) {
+                                _status = 0; _responseText = text;
+                                if (typeof _onload === 'function') _onload.call(proxy);
+                            };
+                            webkit.messageHandlers.request.postMessage({ func: '_xhrRead', url: _url, code: code });
+                        }
+                    };
+                    return proxy;
+                };
+            })();
+        """
+        let xhrScript = WKUserScript(source: xhrPatch, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        contentController.addUserScript(xhrScript)
+        if developMode {
+            let consoleBridge = """
+                (function() {
+                    const _log = function(level, args) {
+                        const msg = Array.from(args).map(a => {
+                            try { return typeof a === 'object' ? JSON.stringify(a) : String(a); } catch(e) { return String(a); }
+                        }).join(' ');
+                        webkit.messageHandlers.request.postMessage({ func: '_console', level: level, msg: msg });
+                    };
+                    window.console = { log: function() { _log('log', arguments); }, warn: function() { _log('warn', arguments); }, error: function() { _log('error', arguments); }, info: function() { _log('info', arguments); } };
+                    window.onerror = function(msg, src, line) { _log('error', ['[onerror] ' + msg + ' @ ' + src + ':' + line]); };
+                    window.addEventListener('unhandledrejection', function(e) { _log('error', ['[unhandledrejection]', e.reason]); });
+                })();
+            """
+            let script = WKUserScript(source: consoleBridge, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+            contentController.addUserScript(script)
+        }
         let config = WKWebViewConfiguration()
         config.userContentController = contentController
         config.allowsInlineMediaPlayback = true
@@ -57,6 +126,7 @@ class WUIEnvironment: NSObject {
             config.mediaTypesRequiringUserActionForPlayback = []
         }
         webView = WKWebView(frame: .zero, configuration: config)
+        if #available(iOS 16.4, *) { webView.isInspectable = developMode }
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.scrollView.maximumZoomScale = 5.0
@@ -375,9 +445,12 @@ class WUIEnvironment: NSObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             NSLog("%@ openURL requested: %@", self.logTag, url)
-            if url.hasPrefix("file://"), let fileURL = URL(string: url) {
-                let accessDir = fileURL.deletingLastPathComponent()
-                self.webView.loadFileURL(fileURL, allowingReadAccessTo: accessDir)
+            if url.hasPrefix("file://"), let rawURL = URL(string: url) {
+                // file:/// + /absolute/path produces file:////path (4 slashes). Strip extra leading slashes.
+                var cleanPath = rawURL.path
+                while cleanPath.hasPrefix("//") { cleanPath = String(cleanPath.dropFirst()) }
+                let fileURL = URL(fileURLWithPath: cleanPath)
+                self.webView.loadFileURL(fileURL, allowingReadAccessTo: Bundle.main.bundleURL)
             } else if let externalURL = URL(string: url) {
                 UIApplication.shared.open(externalURL)
             }
@@ -620,6 +693,21 @@ extension WUIEnvironment: WKScriptMessageHandler {
             case "clearDeepLink":
                 clearDeepLink()
                 push("null")
+            case "_xhrRead":
+                guard let urlString = json["url"] as? String, let code = json["code"] as? Int else { return }
+                var path = URL(string: urlString)?.path ?? urlString
+                while path.hasPrefix("//") { path = String(path.dropFirst()) }
+                let fileContent = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
+                guard let jsonData = try? JSONEncoder().encode(fileContent),
+                      let jsonStr  = String(data: jsonData, encoding: .utf8) else { return }
+                let xhrJs = "window._wuiXhrRespond(\(code), \(jsonStr))"
+                DispatchQueue.main.async { [weak self] in self?.webView.evaluateJavaScript(xhrJs, completionHandler: nil) }
+                return
+            case "_console":
+                let level = json["level"] as? String ?? "log"
+                let msg   = json["msg"]   as? String ?? ""
+                NSLog("%@ [js:%@] %@", logTag, level, msg)
+                return
             default:
                 push("")
         }

@@ -11,20 +11,25 @@ class WUIEnvironment {
 	static version = "0.1";
 	static #instance = null;
 	static #defaults = {
-		localStorageEnabled: true,
+		localStorage: true,
 		onReady: null,
 		onDownloadFile: null,
 		onReceiveDeepLink: null
 	};
 
+	#userAgent = null;
+	#platform = null;
+	#systemName = null;
+	#environment = null;
+	#localStorage = false;
+	#onReady = null;
+	#onDownloadFile = null;
+	#onReceiveDeepLink = null;
+
 	#checkInterval = 100;
 	#reqCount = 0;
 	#resCount = 0;
 	#responses = {};
-	#localStorageEnabled = false;
-	#onReady = null;
-	#onDownloadFile = null;
-	#onReceiveDeepLink = null;
 
 	static response(args) {
 		const instance = WUIEnvironment.#instance;
@@ -53,29 +58,44 @@ class WUIEnvironment {
 	}
 
 	constructor(properties) {
-		this.userAgent = navigator.userAgent;
-		this.platform = navigator.userAgentData?.platform || navigator.platform;
-		this.systemName =
-			this.platform.match(/iphone|ipad/i) ? ("iOS"
-			) : this.platform.match(/android/i) ? ("Android"
-			) : this.platform.match(/mac/i) ? ("macOS"
-			) : this.platform.match(/linux/i) ? ("Linux"
-			) : this.platform.match(/windows phone|windows mobile/i) ? ("Windows Phone"
-			) : this.platform.match(/win/i) ? ("Windows"
+		this.#userAgent = navigator.userAgent;
+		this.#platform = navigator.userAgentData?.platform || navigator.platform;
+		this.#systemName =
+			this.#platform.match(/iphone|ipad/i) ? ("iOS"
+			) : this.#platform.match(/android/i) ? ("Android"
+			) : this.#platform.match(/mac/i) ? ("macOS"
+			) : this.#platform.match(/linux/i) ? ("Linux"
+			) : this.#platform.match(/windows phone|windows mobile/i) ? ("Windows Phone"
+			) : this.#platform.match(/win/i) ? ("Windows"
 			) : "";
-		this.environment =
-			this.userAgent.match(/WUIEnvironment/i) && this.userAgent.match(/android/i) && typeof (Android) != "undefined" ? ("wui.android"
-			) : this.userAgent.match(/WUIEnvironment/i) && this.userAgent.match(/iphone|ipad/i) && typeof (webkit) != "undefined" && typeof (webkit.messageHandlers) != "undefined" ? ("wui.ios"
+		this.#environment =
+			this.#userAgent.match(/WUIEnvironment/i) && this.#userAgent.match(/android/i) && typeof (Android) != "undefined" ? ("wui.android"
+			) : this.#userAgent.match(/WUIEnvironment/i) && this.#userAgent.match(/iphone|ipad/i) && typeof (webkit) != "undefined" && typeof (webkit.messageHandlers) != "undefined" ? ("wui.ios"
 			) : ("web");
-		this.isLocalEnv = this.environment.match(/wui/i);
 		Object.keys(WUIEnvironment.#defaults).forEach(prop => {
 			this[prop] = typeof (properties) != "undefined" && prop in properties ? properties[prop] : prop in WUIEnvironment.#defaults ? WUIEnvironment.#defaults[prop] : null;
 		});
 		WUIEnvironment.#instance = this;
 	}
 
-	get localStorageEnabled() {
-		return this.#localStorageEnabled;
+	get userAgent() {
+		return this.#userAgent;
+	}
+
+	get platform() {
+		return this.#platform;
+	}
+
+	get systemName() {
+		return this.#systemName;
+	}
+
+	get environment() {
+		return this.#environment;
+	}
+
+	get localStorage() {
+		return this.#localStorage;
 	}
 
 	get onDownloadFile() {
@@ -90,9 +110,9 @@ class WUIEnvironment {
 		return this.#onReceiveDeepLink;
 	}
 
-	set localStorageEnabled(value) {
+	set localStorage(value) {
 		if (typeof value === "boolean") {
-			this.#localStorageEnabled = value;
+			this.#localStorage = value;
 		}
 	}
 
@@ -120,7 +140,7 @@ class WUIEnvironment {
 	#request(options) {
 		this.#reqCount++;
 		return new Promise((resolve) => {
-			if (this.environment == "wui.android") {
+			if (this.#environment == "wui.android") {
 				const response = Android.request(JSON.stringify(options));
 				if (options.func.match(/^(getDeviceInfo|getDisplayInfo|getAppInfo|getPermissionsStatus|getCurrentPosition)$/) || (options.func == "readFile" && options.name.match(/\.json$/i))) {
 					resolve(JSON.parse(response || "{}"));
@@ -131,7 +151,7 @@ class WUIEnvironment {
 				if (this.#reqCount === this.#resCount && typeof this.#onReady === "function") {
 					this.#onReady(this.#reqCount);
 				}
-			} else if (this.environment == "wui.ios") {
+			} else if (this.#environment == "wui.ios") {
 				const code = this.#reqCount;
 				this.#responses[code] = null;
 				options.code = code;
@@ -155,22 +175,26 @@ class WUIEnvironment {
 		});
 	}
 
+	isLocalEnvironment() {
+		return this.#environment.match(/wui/i);
+	}
+
 	isAppInForeground(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "isAppInForeground" }).then(done);
 		}
 		return null;
 	}
 
 	getDeviceInfo(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "getDeviceInfo" }).then(done);
 		}
-		return { platform: this.systemName };
+		return { platform: this.#systemName };
 	}
 
 	getDisplayInfo(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "getDisplayInfo" }).then(done);
 		}
 		return {
@@ -181,14 +205,14 @@ class WUIEnvironment {
 	}
 
 	getAppInfo(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "getAppInfo" }).then(done);
 		}
 		return null;
 	}
 
 	getPermissionsStatus(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "getPermissionsStatus" }).then(done);
 		} else if (navigator.permissions) {
 			const $this = this;
@@ -202,7 +226,7 @@ class WUIEnvironment {
 				};
 				try {
 					const location = await navigator.permissions.query({ name: "geolocation" });
-					const storage = !$this.userAgent.match(/Safari/i) ? await navigator.permissions.query({ name: "storage-access" }) : { state: "undefined" };
+					const storage = !$this.#userAgent.match(/Safari/i) ? await navigator.permissions.query({ name: "storage-access" }) : { state: "undefined" };
 					const camera = await navigator.permissions.query({ name: "camera" });
 					const notifications = await navigator.permissions.query({ name: "notifications" });
 					permissions.location = location.state;
@@ -220,7 +244,7 @@ class WUIEnvironment {
 	}
 
 	getCurrentPosition(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "getCurrentPosition" }).then(done);
 		} else if (navigator.geolocation) {
 			return new Promise((resolve) => {
@@ -248,7 +272,7 @@ class WUIEnvironment {
 	}
 
 	getConnectionStatus(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "getConnectionStatus" }).then(done);
 		} else if (typeof (navigator.onLine) != "undefined") {
 			if (typeof (done) == "function") {
@@ -260,13 +284,13 @@ class WUIEnvironment {
 	}
 
 	setStatusbarStyle(color, darkIcons, done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			this.#request({ func: "setStatusbarStyle", color: color, darkIcons: darkIcons }).then(done);
 		}
 	}
 
 	setNavigationbarStyle(color, darkIcons, done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			this.#request({ func: "setNavigationbarStyle", color: color, darkIcons: darkIcons }).then(done);
 		}
 	}
@@ -275,9 +299,9 @@ class WUIEnvironment {
 		if (name.match(/\.json$/i) && typeof (content) == "object") {
 			content = JSON.stringify(content);
 		}
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "saveFile", name: name, content: content }).then(done);
-		} else if (this.#localStorageEnabled && window.localStorage) {
+		} else if (this.#localStorage && window.localStorage) {
 			window.localStorage.setItem(name, content);
 			if (typeof (done) == "function") {
 				done(true);
@@ -288,9 +312,9 @@ class WUIEnvironment {
 	}
 
 	readFile(name, done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "readFile", name: name }).then(done);
-		} else if (this.#localStorageEnabled && window.localStorage) {
+		} else if (this.#localStorage && window.localStorage) {
 			let content = window.localStorage.getItem(name) || "";
 			if (name.match(/\.json$/i)) {
 				try {
@@ -308,7 +332,7 @@ class WUIEnvironment {
 	}
 
 	removeFile(name, done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "removeFile", name: name }).then(done);
 		} else if (window.localStorage) {
 			window.localStorage.removeItem(name);
@@ -321,15 +345,15 @@ class WUIEnvironment {
 	}
 
 	openAppSettings(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			this.#request({ func: "openAppSettings" }).then(done);
 		}
 	}
 
 	openURL(url) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			this.#request({ func: "openURL", url: url });
-		} else if (this.systemName.match(/(Android|iOS)/)) {
+		} else if (this.#systemName.match(/(Android|iOS)/)) {
 			const link = document.createElement("a");
 			link.setAttribute("href", url);
 			link.style.display = "none";
@@ -342,14 +366,14 @@ class WUIEnvironment {
 	}
 
 	readDeepLink(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			return this.#request({ func: "readDeepLink" }).then(done);
 		}
 		return null;
 	}
 
 	clearDeepLink(done) {
-		if (this.isLocalEnv) {
+		if (this.isLocalEnvironment()) {
 			this.#request({ func: "clearDeepLink" }).then(done);
 		}
 	}

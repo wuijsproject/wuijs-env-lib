@@ -1,8 +1,11 @@
-> [!NOTE]
-> For the English version of this document, see [README.md](./README.md).
+> [!IMPORTANT]
+> La cuenta de GitHub `wuiproject` se migró a `wui-js` para que coincidiera con el nombre de la cuenta de NPM.
 
 > [!WARNING]
 > Este documento aún no ha sido terminado y esta en una versión preliminar.
+
+> [!NOTE]
+> For the English version of this document, see [README.md](./README.md).
 
 # wuijs-environment-lib
 
@@ -10,13 +13,13 @@
 	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
-Versión librería: `0.1.0`
+**Versión librería**: `0.1.0`
 
-Versión documentación: `0.1.0.20260406.0`
+**Versión documentación**: `0.1.0.20260418.2`
 
-Licencia: `Licencia Apache 2.0`
+**Licencia**: `Licencia Apache 2.0`
 
-Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
+**Autor**: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 
 ## Índice
 
@@ -52,7 +55,9 @@ Autor: `Sergio E. Belmar V. <wuijs.project@gmail.com>`
 		6.   [Inicialización del PackageApp](#ios-config-packageapp)
 		7.   [Inicialización del MainView](#ios-config-mainview)
 *   [Implementación en Web](#web)
-	*   [Métodos JavaScript](#web-methods)
+	*   [Propiedades JavaScript](#web-properties)
+	*   [Métodos de la Clase JavaScript](#web-class-methods)
+	*   [Métodos de la Instancia JavaScript](#web-instance-methods)
 	*   [Uso JavaScript](#web-js-usage)
 
 <a name="overview"></a>
@@ -160,7 +165,7 @@ wuiEnvironment.saveDeepLink(getIntent());
 
 ```swift
 wuiEnvironment = WUIEnvironment(viewController: self)
-wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/libraries/wui-js/environment/demo/index.html")
+wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/libraries/wui-js/environment/demo/index.html").absoluteString)
 ```
 
 5. En las páginas HTML propias, incluir la clase JS e instanciarla:
@@ -442,6 +447,9 @@ public class MainActivity extends AppCompatActivity {
 
 La implementación en iOS utiliza como motor de renderización WebKit (WKWebView) y se comunica mediante `WKScriptMessageHandler`.
 
+> [!NOTE]
+> **Limitación de XHR con `file://` en WKWebView:** WKWebView bloquea todas las llamadas `XMLHttpRequest` a URLs `file://` sin importar el valor de `allowingReadAccessTo`. `WUIEnvironment` inyecta automáticamente un `WKUserScript` al inicio del documento que intercepta estas solicitudes y las enruta por el bridge nativo mediante `webkit.messageHandlers.request`. Esto es transparente para el código JavaScript — `XMLHttpRequest` funciona con normalidad tanto para archivos locales como para URLs remotas.
+
 <a name="ios-constructor"></a>
 
 ### Constructor Swift
@@ -650,9 +658,9 @@ class EnvironmentViewController: UIViewController {
         super.viewDidLoad()
         wuiEnvironment = WUIEnvironment(viewController: self)
         // Carga página demo (comenta la siguiente línea después de validar la prueba)
-        wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/libraries/wui-js/environment/demo/index.html")
+        wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/libraries/wui-js/environment/demo/index.html").absoluteString)
         // Carga página inicial (descomenta la siguiente línea después de validar la prueba)
-        // wuiEnvironment?.openURL(url: "file:///\(Bundle.main.bundlePath)/assets/pages/index.html")
+        // wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/pages/index.html").absoluteString)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
     }
 
@@ -698,29 +706,56 @@ La clase JavaScript `WUIEnvironment` debe ser incluida en cada página HTML que 
 
 La librería JS abstrae ambos comportamientos en la misma API basada en callbacks.
 
-<a name="web-methods"></a>
+<a name="web-properties"></a>
 
-### Métodos JavaScript de la Instancia
+### Propiedades JavaScript
+
+Campos públicos y propiedades getter/setter de la instancia de `WUIEnvironment`.
+
+| Propiedad           | Tipo 	           | Valor por defecto                                         | Descripción |
+| ------------------- | ---------------- | --------------------------------------------------------- | ----------- |
+| `userAgent`         | `string`         | `navigator.userAgent`                                     | (get)<br><br>String raw del user agent. Resuelto al momento de construcción. |
+| `platform`          | `string`         | `navigator.userAgentData?.platform \| navigator.platform` | (get)<br><br>String de plataforma desde el navegador o el SO. Resuelto al momento de construcción. |
+| `systemName`        | `string`         | `""`                                                      | (get)<br><br>Nombre normalizado del SO derivado de `platform`: `"iOS"`, `"Android"`, `"macOS"`, `"Linux"`, `"Windows Phone"`, `"Windows"` o `""`. Resuelto al momento de construcción. |
+| `environment`       | `string`         | `"web"`                                                   | (get)<br><br>Identificador del entorno de ejecución: `"wui.android"` cuando se ejecuta en un WebView Android, `"wui.ios"` cuando se ejecuta en un WKWebView iOS, o `"web"` en cualquier otro caso. Resuelto al momento de construcción. |
+| `localStorage`      | `boolean`        | `true`                                                    | (get/set)<br><br>Cuando es `true`, `saveFile`, `readFile` y `removeFile` usan `window.localStorage` como fallback en web. No tiene efecto dentro de un WebView nativo. |
+| `onReady`           | `function\|null` | `null`                                                    | (get/set)<br><br>Callback que se ejecuta cuando todas las solicitudes bridge pendientes han recibido respuesta. Recibe el número total de solicitudes como argumento. Si se asigna después de que todas las solicitudes ya se resolvieron, se ejecuta inmediatamente. |
+| `onDownloadFile`    | `function\|null` | `null`                                                    | (get/set)<br><br>Callback que se ejecuta cuando se completa la descarga de un archivo iniciada desde el WebView. Recibe `{ filename, mimetype, uri }`. Debe asignarse antes de cargar la primera página. |
+| `onReceiveDeepLink` | `function\|null` | `null`                                                    | (get/set)<br><br>Callback que se ejecuta cuando la app recibe una URL de Deep Link. Recibe la URL como string. Debe asignarse antes de cargar la primera página. |
+
+<a name="web-class-methods"></a>
+
+### Métodos de la Clase JavaScript
+
+Miembros estáticos de la clase `WUIEnvironment`.
+
+| Miembro          | Tipo              | Descripción |
+| ---------------- | ----------------- | ----------- |
+| `response(args)` | `método estático` | Punto de entrada para la comunicación nativo→JS. Llamado internamente por el bridge nativo para entregar respuestas de solicitudes y despachar los eventos `onDownloadFile` / `onReceiveDeepLink`. No está destinado a ser llamado desde el código de la aplicación. |
+
+<a name="web-instance-methods"></a>
+
+### Métodos de la Instancia JavaScript
 
 | Método                  | Tipo de retorno           | Descripción |
-| ----------------------- |---------------------------| ----------- |
-| `onReady`               | `void`                    | `onReady = done`<br><br>Argumentos:<br>**• done:** `function`, callback que recibe el número total de solicitudes realizadas.<br><br>Propiedad. Ejecuta el callback cuando todas las solicitudes bridge pendientes han recibido respuesta. Si se asigna después de que todas las solicitudes ya se resolvieron, se ejecuta inmediatamente. |
-| `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground(done)`<br><br>Verifica si la aplicación está en primer plano. |
-| `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo(done)`<br><br>Obtiene información del hardware (UUID, modelo, plataforma, etc.). |
-| `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo(done)`<br><br>Obtiene métricas de pantalla y modo de navegación. |
-| `getAppInfo`            | `Promise<Object>`         | `getAppInfo(done)`<br><br>Obtiene metadatos de la aplicación. |
-| `getPermissionsStatus`  | `Promise<Object>`         | `getPermissionsStatus(done)`<br><br>Consulta el estado de los permisos del sistema. |
-| `getCurrentPosition`    | `Promise<Object>`         | `getCurrentPosition(done)`<br><br>Obtiene la ubicación GPS actual. |
-| `getConnectionStatus`   | `Promise<boolean>`        | `getConnectionStatus(done)`<br><br>Verifica si hay conexión a internet activa. |
-| `setStatusbarStyle`     | `void`                    | `setStatusbarStyle(color, darkIcons, done)`<br><br>Argumentos:<br>**• color:** `string`, color en formato HEX o ID de recurso.<br>**• darkIcons:** `boolean`, iconos oscuros.<br>**• done:** `function`, callback opcional.<br><br>Cambia el color y estilo de la barra de estado. |
-| `setNavigationbarStyle` | `void`                    | `setNavigationbarStyle(color, darkIcons, done)`<br><br>Argumentos:<br>**• color:** `string`, color en formato HEX o ID de recurso.<br>**• darkIcons:** `boolean`, iconos oscuros.<br>**• done:** `function`, callback opcional.<br><br>Cambia el color y estilo de la barra de navegación. |
-| `saveFile`              | `Promise<boolean>`        | `saveFile(name, content, done)`<br><br>Argumentos:<br>**• name:** `string`, nombre del archivo.<br>**• content:** `string|Object`, contenido.<br>**• done:** `function`, callback opcional.<br><br>Guarda un archivo en el almacenamiento local. |
-| `readFile`              | `Promise<string\|Object>` | `readFile(name, done)`<br><br>Argumentos:<br>**• name:** `string`, nombre del archivo.<br>**• done:** `function`, callback opcional.<br><br>Lee un archivo del almacenamiento local. |
-| `removeFile`            | `Promise<boolean>`        | `removeFile(name, done)`<br><br>Argumentos:<br>**• name:** `string`, nombre del archivo.<br>**• done:** `function`, callback opcional.<br><br>Elimina un archivo del almacenamiento. |
-| `openAppSettings`       | `void`                    | `openAppSettings(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Abre la pantalla de configuración de la aplicación. |
-| `openURL`               | `void`                    | `openURL(url)`<br><br>Argumentos:<br>**• url:** `string`, la URL de destino o ruta de asset local.<br><br>Abre un recurso local en el WebView o un enlace externo. |
-| `readDeepLink`          | `Promise<string>`         | `readDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Lee la última URL de Deep Link recibida. |
-| `clearDeepLink`         | `void`                    | `clearDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Limpia la URL de Deep Link almacenada. |
+| ----------------------- | ------------------------- | ----------- |
+| `isLocalEnvironment`    | `boolean`                 | `isLocalEnvironment()`<br><br>Devuelve `true` cuando se ejecuta dentro de un WebView nativo (`wui.android` o `wui.ios`). Devuelve `null` en web. Se resuelve sincrónicamente desde el valor establecido al momento de construcción. |
+| `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground(done)`<br><br>Verifica si la aplicación está en primer plano. Devuelve `null` en web. |
+| `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo(done)`<br><br>Obtiene información del hardware (UUID, modelo, plataforma, etc.). En web devuelve `{ platform: systemName }`. |
+| `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo(done)`<br><br>Obtiene métricas de pantalla y modo de navegación. En web devuelve `{ width, height, notch: false }`. |
+| `getAppInfo`            | `Promise<Object>`         | `getAppInfo(done)`<br><br>Obtiene metadatos de la aplicación. Devuelve `null` en web. |
+| `getPermissionsStatus`  | `Promise<Object>`         | `getPermissionsStatus(done)`<br><br>Consulta el estado de los permisos del sistema. En web usa `navigator.permissions` cuando está disponible. |
+| `getCurrentPosition`    | `Promise<Object>`         | `getCurrentPosition(done)`<br><br>Obtiene la ubicación GPS actual. En web usa `navigator.geolocation`. |
+| `getConnectionStatus`   | `Promise<boolean>`        | `getConnectionStatus(done)`<br><br>Verifica si hay conexión a internet activa. En web usa `navigator.onLine`. |
+| `setStatusbarStyle`     | `void`                    | `setStatusbarStyle(color, darkIcons, done)`<br><br>Argumentos:<br>**• color:** `string`, color en formato HEX o ID de recurso.<br>**• darkIcons:** `boolean`, iconos oscuros.<br>**• done:** `function`, callback opcional.<br><br>Cambia el color y estilo de la barra de estado. Sin efecto en web. |
+| `setNavigationbarStyle` | `void`                    | `setNavigationbarStyle(color, darkIcons, done)`<br><br>Argumentos:<br>**• color:** `string`, color en formato HEX o ID de recurso.<br>**• darkIcons:** `boolean`, iconos oscuros.<br>**• done:** `function`, callback opcional.<br><br>Cambia el color y estilo de la barra de navegación. Sin efecto en web. |
+| `saveFile`              | `Promise<boolean>`        | `saveFile(name, content, done)`<br><br>Argumentos:<br>**• name:** `string`, nombre del archivo.<br>**• content:** `string\|Object`, contenido (los objetos se serializan como JSON para archivos `.json`).<br>**• done:** `function`, callback opcional.<br><br>Guarda un archivo en el almacenamiento nativo. En web usa `localStorage` si `localStorage` es `true`. |
+| `readFile`              | `Promise<string\|Object>` | `readFile(name, done)`<br><br>Argumentos:<br>**• name:** `string`, nombre del archivo.<br>**• done:** `function`, callback opcional.<br><br>Lee un archivo del almacenamiento nativo. Los archivos `.json` se parsean automáticamente. En web usa `localStorage` si `localStorage` es `true`. |
+| `removeFile`            | `Promise<boolean>`        | `removeFile(name, done)`<br><br>Argumentos:<br>**• name:** `string`, nombre del archivo.<br>**• done:** `function`, callback opcional.<br><br>Elimina un archivo del almacenamiento nativo. En web usa `localStorage`. |
+| `openAppSettings`       | `void`                    | `openAppSettings(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Abre la pantalla de configuración de la aplicación. Sin efecto en web. |
+| `openURL`               | `void`                    | `openURL(url)`<br><br>Argumentos:<br>**• url:** `string`, la URL de destino o ruta de asset local.<br><br>Abre un recurso local en el WebView o un enlace externo. En web usa `window.open`. |
+| `readDeepLink`          | `Promise<string>`         | `readDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Lee la última URL de Deep Link recibida. Devuelve `null` en web. |
+| `clearDeepLink`         | `void`                    | `clearDeepLink(done)`<br><br>Argumentos:<br>**• done:** `function`, callback opcional.<br><br>Limpia la URL de Deep Link almacenada. Sin efecto en web. |
 
 <a name="web-js-usage"></a>
 
