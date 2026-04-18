@@ -14,7 +14,9 @@ CLAUDE.md
 MEMORY.md
 NOTES.md
 NPM.md
+jsconfig.json
 
 # Trash
 
 _*
+*.bak
