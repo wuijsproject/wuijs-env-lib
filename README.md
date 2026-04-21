@@ -15,7 +15,7 @@
 
 **Library version**: `0.1.0`
 
-**Documentation version**: `0.1.0.20260418.2`
+**Documentation version**: `0.1.0.20260418.3`
 
 **License**: `Apache License 2.0`
 
@@ -33,6 +33,7 @@
 	*   [Java Constructor](#android-constructor)
 	*   [Java Methods](#android-methods)
 	*   [Android Events](#android-events)
+	*   [JavaScript Dialogs](#android-dialogs)
 	*   [Installation and Setup](#android-install)
 		1.   [Clone the library](#android-clone)
 		2.   [Project Configuration](#android-config-project)
@@ -46,6 +47,7 @@
 	*   [Swift Constructor](#ios-constructor)
 	*   [Swift Methods](#ios-methods)
 	*   [iOS Events](#ios-events)
+	*   [JavaScript Dialogs](#ios-dialogs)
 	*   [Installation and Setup](#ios-install)
 		1.   [Clone the library](#ios-clone)
 		2.   [Permissions Configuration](#ios-config-permissions)
@@ -64,7 +66,8 @@
 
 ## Overview
 
-WUI/JS Environment Lib is a bridge between web environments and native web rendering engines via JavaScript, designed to facilitate the creation of hybrid applications. It provides access to hardware instances and the file system directly from JavaScript.
+WUI/JS Environment Lib is a bridge between web environments and native web rendering engines via JavaScript, designed to facilitate the creation of hybrid applications.
+It provides access to hardware and system instances such as files, camera, etc. directly from JavaScript.
 It is currently available for Android in Java via WebView and for iOS in Swift via WebKit.
 
 <a name="project"></a>
@@ -203,6 +206,7 @@ The Android implementation uses WebView as its rendering engine.
 
 | Method                  | Return type  | Description |
 | ----------------------- | ------------ | ----------- |
+| `requestPermission`     | `void`       | `requestPermission(type, callback)`<br><br>Arguments:<br>**• type:** `String`, one of `location`, `notifications`, `camera`, `contacts`, `storage`.<br>**• callback:** `Consumer<Boolean>`, invoked with the result.<br><br>Requests the system permission for the given type. If already granted, invokes the callback immediately. If permanently denied (`don't ask again`), returns `false` without showing the dialog. On Android < 13, `notifications` always resolves to `true`. Delegates the OS callback through `MainActivity.onRequestPermissionsResult` → `handlePermissionResult(...)`. |
 | `isAppInForeground`     | `boolean`    | `isAppInForeground()`<br><br>Checks whether the application is currently in the foreground. |
 | `getDeviceInfo`         | `JSONObject` | `getDeviceInfo()`<br><br>Returns device hardware information: `id`, `uuid`, `name`, `platform`, `version`, `maker`, `model`. |
 | `getDisplayInfo`        | `JSONObject` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, and system bar style flags. |
@@ -212,6 +216,7 @@ The Android implementation uses WebView as its rendering engine.
 | `getConnectionStatus`   | `boolean`    | `getConnectionStatus()`<br><br>Checks whether an active internet connection exists (WiFi, mobile data, or Ethernet). |
 | `setStatusbarStyle`     | `void`       | `setStatusbarStyle(color, darkIcons)`<br><br>Arguments:<br>**• color:** `String`, HEX color (`#RRGGBB`) or a `colors.xml` key (`statusbarLightColor`, `statusbarDarkColor`, etc.).<br>**• darkIcons:** `boolean`, `true` for dark icons, `false` for light.<br><br>Updates the color and icon style of the status bar. |
 | `setNavigationbarStyle` | `void`       | `setNavigationbarStyle(color, darkIcons)`<br><br>Arguments:<br>**• color:** `String`, HEX color (`#RRGGBB`) or a `colors.xml` key (`navigationbarLightColor`, `navigationbarDarkColor`, etc.).<br>**• darkIcons:** `boolean`, `true` for dark icons, `false` for light.<br><br>Updates the color and icon style of the navigation bar. |
+| `setAppBadge`           | `void`       | `setAppBadge(number)`<br><br>Arguments:<br>**• number:** `int`, non-negative badge count. `0` clears the badge.<br><br>Sets or clears the application icon badge using a hybrid strategy based on the device manufacturer. On OEM launchers with native badge support (Samsung, Xiaomi, Huawei, Honor, Oppo, Vivo, Sony, HTC, LG, Asus), uses `ShortcutBadger` to render the number directly on the icon without publishing a notification. On stock Pixel/AOSP launchers, falls back to a silent notification (channel `wui_badge`, `IMPORTANCE_LOW`, `setShowBadge(true)`, `setNumber(n)`, `setSilent(true)`) which produces a dot on the icon — Pixel does not render native numbers. On Android 13+ requests the `POST_NOTIFICATIONS` permission first; if denied, the call fails silently. |
 | `saveFile`              | `boolean`    | `saveFile(name, content)`<br><br>Arguments:<br>**• name:** `String`, file name.<br>**• content:** `String`, content to save.<br><br>Writes a file to the application's private internal storage. Returns `true` on success. |
 | `readFile`              | `String`     | `readFile(name)`<br><br>Arguments:<br>**• name:** `String`, file name.<br><br>Reads a file from internal storage. Returns `null` if the file does not exist or an error occurs. |
 | `removeFile`            | `boolean`    | `removeFile(name)`<br><br>Arguments:<br>**• name:** `String`, file name.<br><br>Deletes a file from internal storage. Returns `true` on success. |
@@ -221,6 +226,7 @@ The Android implementation uses WebView as its rendering engine.
 | `sendDeepLink`          | `void`       | `sendDeepLink()`<br><br>Sends the stored Deep Link URL to JavaScript by calling `WUIEnvironment.response()`. Only acts if the page is already loaded. |
 | `readDeepLink`          | `String`     | `readDeepLink()`<br><br>Returns the last stored Deep Link URL, or `null` if none is stored. |
 | `clearDeepLink`         | `void`       | `clearDeepLink()`<br><br>Clears the stored Deep Link URL. |
+| `log`                   | `void`       | `log(message[, force])`<br><br>Arguments:<br>**• message:** `String`, message to log.<br>**• force:** `boolean` *optional*, default `false`. When `true`, bypasses the `developMode` restriction and always writes to Logcat.<br><br>Forwards the message to native Logcat under the `WUIEnvironment` tag with level `INFO` and the `[js]` prefix. Only active when `developMode = true` unless `force` overrides it. |
 
 <a name="android-events"></a>
 
@@ -232,6 +238,21 @@ Events are callbacks that the native side sends to JavaScript when an asynchrono
 | ------------------- | ----------------------------- | ----------- |
 | `onDownloadFile`    | `filename`, `mimetype`, `uri` | Fired when a file download initiated from the WebView completes. The file is saved to the device's public `Downloads` directory and automatically opened with the corresponding application. |
 | `onReceiveDeepLink` | `url`                         | Fired when the application receives a Deep Link URL (on launch or while running). |
+
+<a name="android-dialogs"></a>
+
+### JavaScript Dialogs
+
+`WUIEnvironment` intercepts standard JavaScript dialogs (`alert()`, `confirm()`, `prompt()`) and renders them via native `AlertDialog`. This replaces the default WebView dialog that prefixes the message with the page origin (e.g. `"The page at 'file://' says:"`).
+
+| Dialog                     | Native behavior |
+| -------------------------- | --------------- |
+| `alert(message)`           | Displays `AlertDialog` with the message and an **OK** button. Blocks JavaScript until dismissed. |
+| `confirm(message)`         | Displays `AlertDialog` with **OK** / **Cancel** buttons. Returns `true` / `false` to JavaScript. |
+| `prompt(message, default)` | Displays `AlertDialog` with a text input and **OK** / **Cancel** buttons. Returns the entered string or `null` on cancel. |
+
+> [!NOTE]
+> Dialogs are modal (`setCancelable(false)`) — dismissal only via the OK/Cancel buttons. Button labels are auto-localized by the system (`android.R.string.ok` / `android.R.string.cancel`).
 
 <a name="android-install"></a>
 
@@ -279,6 +300,17 @@ android {
     }
 }
 ```
+
+Add the `ShortcutBadger` dependency required by the OEM branch of `setAppBadge`:
+
+```kotlin
+dependencies {
+    implementation("me.leolin:ShortcutBadger:1.1.22@aar")
+}
+```
+
+> [!NOTE]
+> `setAppBadge` uses a hybrid strategy: `ShortcutBadger` for manufacturers with proprietary badge APIs (Samsung, Xiaomi, Huawei, Honor, Oppo, Vivo, Sony, HTC, LG, Asus — render the number), and a silent notification fallback for Pixel/AOSP (renders a dot, not a number, because the Pixel launcher does not support native numeric badges). The fallback branch adds an entry to the notification panel; the OEM branch does not.
 
 <a name="android-config-manifest"></a>
 
@@ -438,8 +470,20 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // Required by requestPermission — forwards the OS callback to the bridge
+        if (wuiEnvironment != null) {
+            wuiEnvironment.handlePermissionResult(requestCode, permissions, grantResults);
+        }
+    }
 }
 ```
+
+> [!IMPORTANT]
+> The `onRequestPermissionsResult` override is required by `requestPermission` (and by any method that depends on it: `setAppBadge`, `getCurrentPosition`). Without it the permission dialog appears but the callback never resolves.
 
 <a name="ios"></a>
 
@@ -464,6 +508,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 
 | Method                  | Return type     | Description |
 | ----------------------- | --------------- | ----------- |
+| `requestPermission`     | `void`          | `requestPermission(type, completion)`<br><br>Arguments:<br>**• type:** `String`, one of `location`, `notifications`, `camera`, `contacts`.<br>**• completion:** `(Bool) -> Void`, invoked with the result.<br><br>Requests the system permission for the given type. If already granted, invokes the completion immediately. If denied or restricted, returns `false`. For `location`, uses `CLLocationManager.requestWhenInUseAuthorization`; for `notifications`, `UNUserNotificationCenter.requestAuthorization`; for `camera`, `AVCaptureDevice.requestAccess`; for `contacts`, `CNContactStore.requestAccess`. |
 | `isAppInForeground`     | `Bool`          | `isAppInForeground()`<br><br>Checks whether the application is currently in the foreground. |
 | `getDeviceInfo`         | `[String: Any]` | `getDeviceInfo()`<br><br>Returns device hardware information: `id`, `uuid`, `name`, `platform`, `version`, `maker`, `model`. |
 | `getDisplayInfo`        | `[String: Any]` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, and system bar style flags.<br><br>`statusbarTransparent` and `navigationbarTransparent` reflect the current state of the UIView overlays managed by `setStatusbarStyle` and `setNavigationbarStyle`: `true` when no opaque overlay is placed over that area. `navigationbarLightMode` is always `false` (the iOS home indicator adapts automatically). |
@@ -473,6 +518,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 | `getConnectionStatus`   | `Bool`          | `getConnectionStatus()`<br><br>Checks whether an active internet connection exists. Reads the current network state synchronously via `NWPathMonitor.currentPath`; the internal `pathUpdateHandler` keeps the cached state updated for subsequent calls. |
 | `setStatusbarStyle`     | `void`          | `setStatusbarStyle(color, darkIcons)`<br><br>Arguments:<br>**• color:** `String`, HEX color (`#RRGGBB`) or `Assets.xcassets` color set name (`statusbarLightColor`, `statusbarDarkColor`, etc.).<br>**• darkIcons:** `Bool`, `true` for dark icons, `false` for light.<br><br>Places a UIView with the given color over the status bar area. Icon style is applied via `preferredStatusBarStyle` — the host ViewController must expose this property and call `setNeedsStatusBarAppearanceUpdate()`. |
 | `setNavigationbarStyle` | `void`          | `setNavigationbarStyle(color, darkIcons)`<br><br>Arguments:<br>**• color:** `String`, HEX color (`#RRGGBB`) or `Assets.xcassets` color set name (`navigationbarLightColor`, `navigationbarDarkColor`, etc.).<br>**• darkIcons:** `Bool`, ignored on iOS (home indicator is not configurable).<br><br>Places a UIView with the given color over the `safeAreaInsets.bottom` area. No effect on devices with a home button. |
+| `setAppBadge`           | `void`          | `setAppBadge(number)`<br><br>Arguments:<br>**• number:** `Int`, non-negative badge count. `0` clears the badge.<br><br>Sets or clears the application icon badge. Requests the notifications permission first. On iOS 16+ uses `UNUserNotificationCenter.setBadgeCount`; on earlier versions falls back to `UIApplication.shared.applicationIconBadgeNumber`. |
 | `saveFile`              | `Bool`          | `saveFile(name, content)`<br><br>Arguments:<br>**• name:** `String`, file name.<br>**• content:** `String`, content to save.<br><br>Writes a file to the application's `Documents` directory. Returns `true` on success. |
 | `readFile`              | `String?`       | `readFile(name)`<br><br>Arguments:<br>**• name:** `String`, file name.<br><br>Reads a file from the `Documents` directory. Returns `nil` if the file does not exist or an error occurs. |
 | `removeFile`            | `Bool`          | `removeFile(name)`<br><br>Arguments:<br>**• name:** `String`, file name.<br><br>Deletes a file from the `Documents` directory. Returns `true` on success. |
@@ -482,6 +528,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 | `sendDeepLink`          | `void`          | `sendDeepLink()`<br><br>Sends the stored Deep Link URL to JavaScript by calling `WUIEnvironment.response()`. Only acts if the page is already loaded. |
 | `readDeepLink`          | `String?`       | `readDeepLink()`<br><br>Returns the last stored Deep Link URL, or `nil` if none is stored. |
 | `clearDeepLink`         | `void`          | `clearDeepLink()`<br><br>Clears the stored Deep Link URL. |
+| `log`                   | `void`          | `log(_ message[, force])`<br><br>Arguments:<br>**• message:** `String` (autoclosure), message to log.<br>**• force:** `Bool` *optional*, default `false`. When `true`, bypasses the `developMode` restriction and always writes to the Xcode console.<br><br>Forwards the message to the Xcode console with the `[WUIEnvironment][js]` prefix. Only active when `developMode = true` unless `force` overrides it. |
 
 <a name="ios-events"></a>
 
@@ -493,6 +540,18 @@ Events are callbacks that the native side sends to JavaScript when an asynchrono
 | ------------------- | ----------------------------- | ----------- |
 | `onDownloadFile`    | `filename`, `mimetype`, `uri` | Fired when a file download initiated from the WebView completes. The file is saved to `Documents/Downloads/` inside the app sandbox and opened via `UIActivityViewController`. Requires iOS 14.5+ for `WKDownloadDelegate`; a `URLSession` fallback is used on earlier versions. |
 | `onReceiveDeepLink` | `url`                         | Fired when the application receives a Deep Link URL (on launch or while running). |
+
+<a name="ios-dialogs"></a>
+
+### JavaScript Dialogs
+
+`WUIEnvironment` intercepts standard JavaScript dialogs (`alert()`, `confirm()`, `prompt()`) and renders them via native `UIAlertController`. WKWebView silently discards these dialogs when `WKUIDelegate` does not implement the corresponding panel handlers — `WUIEnvironment` provides them.
+
+| Dialog                     | Native behavior |
+| -------------------------- | --------------- |
+| `alert(message)`           | Displays `UIAlertController` with the message and an **OK** button. |
+| `confirm(message)`         | Displays `UIAlertController` with **OK** / **Cancel** buttons. Returns `true` / `false` to JavaScript. |
+| `prompt(message, default)` | Displays `UIAlertController` with a text input and **OK** / **Cancel** buttons. Returns the entered string or `null` on cancel. |
 
 <a name="ios-install"></a>
 
@@ -628,13 +687,11 @@ extension Notification.Name {
 
 struct MainView: View {
     var body: some View {
-        EnvironmentView()
-            .ignoresSafeArea()
-            .onOpenURL { url in
-                // Forward Deep Link URLs to WUIEnvironment via NotificationCenter.
-                // .onOpenURL handles both app-launch and in-app URL delivery in SwiftUI.
-                NotificationCenter.default.post(name: .wuiDeepLink, object: url)
-            }
+        EnvironmentView().ignoresSafeArea().onOpenURL { url in
+			// Forward Deep Link URLs to WUIEnvironment via NotificationCenter.
+			// .onOpenURL handles both app-launch and in-app URL delivery in SwiftUI.
+			NotificationCenter.default.post(name: .wuiDeepLink, object: url)
+		}
     }
 }
 
@@ -741,23 +798,26 @@ Static members of the `WUIEnvironment` class.
 
 | Method                  | Return type               | Description |
 | ----------------------- | ------------------------- | ----------- |
+| `requestPermission`     | `Promise<boolean>`        | `requestPermission(type[, done])`<br><br>Arguments:<br>**• type:** `string`, one of `location`, `notifications`, `camera`, `contacts`, `storage`.<br>**• done:** `function` *optional*, callback.<br><br>Requests the system permission for the given type. Inside a native WebView delegates to the bridge (`requestPermission`). On web falls back to `navigator.permissions.query`. Resolves with `true` when granted. |
 | `isLocalEnvironment`    | `boolean`                 | `isLocalEnvironment()`<br><br>Returns `true` when running inside a native WebView (`wui.android` or `wui.ios`). Returns `null` on web. Resolved synchronously at call time from the value set at construction. |
-| `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground(done)`<br><br>Checks whether the application is in the foreground. Returns `null` on web. |
-| `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo(done)`<br><br>Gets hardware information (UUID, model, platform, etc.). On web returns `{ platform: systemName }`. |
-| `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo(done)`<br><br>Gets screen metrics and navigation mode. On web returns `{ width, height, notch: false }`. |
-| `getAppInfo`            | `Promise<Object>`         | `getAppInfo(done)`<br><br>Gets application metadata. Returns `null` on web. |
-| `getPermissionsStatus`  | `Promise<Object>`         | `getPermissionsStatus(done)`<br><br>Queries the status of system permissions. On web uses `navigator.permissions` when available. |
-| `getCurrentPosition`    | `Promise<Object>`         | `getCurrentPosition(done)`<br><br>Gets the current GPS location. On web uses `navigator.geolocation`. |
-| `getConnectionStatus`   | `Promise<boolean>`        | `getConnectionStatus(done)`<br><br>Checks whether there is an active internet connection. On web uses `navigator.onLine`. |
-| `setStatusbarStyle`     | `void`                    | `setStatusbarStyle(color, darkIcons, done)`<br><br>Arguments:<br>**• color:** `string`, color in HEX format or resource ID.<br>**• darkIcons:** `boolean`, dark icons.<br>**• done:** `function`, optional callback.<br><br>Changes the color and style of the status bar. No-op on web. |
-| `setNavigationbarStyle` | `void`                    | `setNavigationbarStyle(color, darkIcons, done)`<br><br>Arguments:<br>**• color:** `string`, color in HEX format or resource ID.<br>**• darkIcons:** `boolean`, dark icons.<br>**• done:** `function`, optional callback.<br><br>Changes the color and style of the navigation bar. No-op on web. |
-| `saveFile`              | `Promise<boolean>`        | `saveFile(name, content, done)`<br><br>Arguments:<br>**• name:** `string`, file name.<br>**• content:** `string\|Object`, content (Objects are JSON-stringified for `.json` files).<br>**• done:** `function`, optional callback.<br><br>Saves a file to native storage. On web uses `localStorage` if `localStorage` is `true`. |
-| `readFile`              | `Promise<string\|Object>` | `readFile(name, done)`<br><br>Arguments:<br>**• name:** `string`, file name.<br>**• done:** `function`, optional callback.<br><br>Reads a file from native storage. `.json` files are parsed automatically. On web uses `localStorage` if `localStorage` is `true`. |
-| `removeFile`            | `Promise<boolean>`        | `removeFile(name, done)`<br><br>Arguments:<br>**• name:** `string`, file name.<br>**• done:** `function`, optional callback.<br><br>Deletes a file from native storage. On web uses `localStorage`. |
-| `openAppSettings`       | `void`                    | `openAppSettings(done)`<br><br>Arguments:<br>**• done:** `function`, optional callback.<br><br>Opens the application settings screen. No-op on web. |
+| `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Checks whether the application is in the foreground. Returns `null` on web. |
+| `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets hardware information (UUID, model, platform, etc.). On web returns `{ platform: systemName }`. |
+| `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets screen metrics and navigation mode. On web returns `{ width, height, notch: false }`. |
+| `getAppInfo`            | `Promise<Object>`         | `getAppInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets application metadata. Returns `null` on web. |
+| `getPermissionsStatus`  | `Promise<Object>`         | `getPermissionsStatus([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Queries the status of system permissions. On web uses `navigator.permissions` when available. |
+| `getCurrentPosition`    | `Promise<Object>`         | `getCurrentPosition([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets the current GPS location. On web uses `navigator.geolocation`. |
+| `getConnectionStatus`   | `Promise<boolean>`        | `getConnectionStatus([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Checks whether there is an active internet connection. On web uses `navigator.onLine`. |
+| `setStatusbarStyle`     | `void`                    | `setStatusbarStyle(color, darkIcons[, done])`<br><br>Arguments:<br>**• color:** `string`, color in HEX format or resource ID.<br>**• darkIcons:** `boolean`, dark icons.<br>**• done:** `function` *optional*, callback.<br><br>Changes the color and style of the status bar. No-op on web. |
+| `setNavigationbarStyle` | `void`                    | `setNavigationbarStyle(color, darkIcons[, done])`<br><br>Arguments:<br>**• color:** `string`, color in HEX format or resource ID.<br>**• darkIcons:** `boolean`, dark icons.<br>**• done:** `function` *optional*, callback.<br><br>Changes the color and style of the navigation bar. No-op on web. |
+| `setAppBadge`           | `Promise<void>`           | `setAppBadge(number[, done])`<br><br>Arguments:<br>**• number:** `number`, non-negative badge count. `0` clears the badge.<br>**• done:** `function` *optional*, callback.<br><br>Sets or clears the application icon badge. On web uses the Badging API (`navigator.setAppBadge` / `navigator.clearAppBadge`) when available. |
+| `saveFile`              | `Promise<boolean>`        | `saveFile(name, content[, done])`<br><br>Arguments:<br>**• name:** `string`, file name.<br>**• content:** `string\|Object`, content (Objects are JSON-stringified for `.json` files).<br>**• done:** `function` *optional*, callback.<br><br>Saves a file to native storage. On web uses `localStorage` if `localStorage` is `true`. |
+| `readFile`              | `Promise<string\|Object>` | `readFile(name[, done])`<br><br>Arguments:<br>**• name:** `string`, file name.<br>**• done:** `function` *optional*, callback.<br><br>Reads a file from native storage. `.json` files are parsed automatically. On web uses `localStorage` if `localStorage` is `true`. |
+| `removeFile`            | `Promise<boolean>`        | `removeFile(name[, done])`<br><br>Arguments:<br>**• name:** `string`, file name.<br>**• done:** `function` *optional*, callback.<br><br>Deletes a file from native storage. On web uses `localStorage`. |
+| `openAppSettings`       | `void`                    | `openAppSettings([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Opens the application settings screen. No-op on web. |
 | `openURL`               | `void`                    | `openURL(url)`<br><br>Arguments:<br>**• url:** `string`, the destination URL or local asset path.<br><br>Opens a local resource in the WebView or an external link. On web opens via `window.open`. |
-| `readDeepLink`          | `Promise<string>`         | `readDeepLink(done)`<br><br>Arguments:<br>**• done:** `function`, optional callback.<br><br>Reads the last received Deep Link URL. Returns `null` on web. |
-| `clearDeepLink`         | `void`                    | `clearDeepLink(done)`<br><br>Arguments:<br>**• done:** `function`, optional callback.<br><br>Clears the stored Deep Link URL. No-op on web. |
+| `readDeepLink`          | `Promise<string>`         | `readDeepLink([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Reads the last received Deep Link URL. Returns `null` on web. |
+| `clearDeepLink`         | `void`                    | `clearDeepLink([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Clears the stored Deep Link URL. No-op on web. |
+| `log`                   | `void`                    | `log(message[, force])`<br><br>Arguments:<br>**• message:** `any`, value to log (coerced to string).<br>**• force:** `boolean` *optional*, default `false`. When `true`, instructs the native side to bypass its `developMode` restriction and always write the message.<br><br>Inside a native WebView forwards the message to the native logger (Logcat / Xcode console). On web falls back to `console.log`. |
 
 <a name="web-js-usage"></a>
 
@@ -766,20 +826,30 @@ Static members of the `WUIEnvironment` class.
 ```javascript
 const env = new WUIEnvironment();
 
+// Configure event handlers before loading the first page
+
+env.onReady = function(count) {
+    console.log("All", count, "requests resolved");
+};
+env.onDownloadFile = function(args) {
+    console.log("Downloaded:", args.filename, args.mimetype, args.uri);
+};
+env.onReceiveDeepLink = function(url) {
+    console.log("Deep Link received:", url);
+};
+
 // Use onReady to wait for all initial requests to settle
+
 env.getDeviceInfo(function(info) {
     console.log("Platform:", info.platform);
 });
-
 env.getDisplayInfo(function(display) {
     console.log("Notch:", display.notch);
     console.log("Status bar height:", display.statusbarHeight);
 });
-
 env.getConnectionStatus(function(connected) {
     console.log("Connected:", connected);
 });
-
 env.getCurrentPosition(function(position) {
     if (position.error) {
         console.error("Location error:", position.error);
@@ -787,18 +857,6 @@ env.getCurrentPosition(function(position) {
         console.log("Lat:", position.latitude, "Lon:", position.longitude);
     }
 });
-
-env.onReady = function(count) {
-    console.log("All", count, "requests resolved");
-};
-
-// Configure event handlers before loading the first page
-env.onDownloadFile = function(args) {
-    console.log("Downloaded:", args.filename, args.mimetype, args.uri);
-};
-env.onReceiveDeepLink = function(url) {
-    console.log("Deep Link received:", url);
-};
 ```
 
 > [!NOTE]

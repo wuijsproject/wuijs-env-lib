@@ -59,7 +59,10 @@
 				return JSON.stringify(json).replace(/\{/, "{\n").replace(/\,/g, ",\n").replace(/}$/, "\n}");
 			}
 			const print = (id, content) => {
-				document.getElementById(id).innerHTML = typeof(format(content)) == "object" ? stringify(format(content)) : content;
+				const json = typeof(format(content)) == "object" ? Object.fromEntries(
+					Object.entries(content).sort(([a], [b]) => a.localeCompare(b))
+				) : null;
+				document.getElementById(id).innerHTML = json ? stringify(format(json)) : content;
 			}
 		</script>
 		<h3>.isAppInForeground()</h3>
@@ -166,6 +169,9 @@
 		<button onclick="env.setStatusbarStyle('statusbarLightOverlayColor', true);">change style: statusbar light overlay mode</button>
 		<button onclick="env.setStatusbarStyle('statusbarDarkColor', false);">change style: statusbar dark mode</button>
 		<button onclick="env.setStatusbarStyle('statusbarDarkOverlayColor', false);">change style: statusbar dark overlay mode</button>
+		<h3>.setAppBadge()</h3>
+		<button onclick="env.setAppBadge(1);">set app badge: 1</button>
+		<button onclick="env.setAppBadge(0);">clear app badge</button>
 		<h3>.openAppSettings()</h3>
 		<button onclick="env.openAppSettings();">open app settings</button>
 		<h3>.openURL()</h3>

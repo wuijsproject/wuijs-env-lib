@@ -12,6 +12,10 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
@@ -36,6 +40,8 @@ import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
+import android.webkit.JsPromptResult;
+import android.webkit.JsResult;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.WebResourceError;
@@ -43,10 +49,13 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.EditText;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
 import org.json.JSONException;
@@ -55,13 +64,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.io.File;
 import android.app.DownloadManager;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import me.leolin.shortcutbadger.ShortcutBadger;
 
 public class WUIEnvironment {
 	
@@ -72,7 +85,12 @@ public class WUIEnvironment {
     private String deepLinkURL = null;
     private boolean pageLoaded = false;
     private final String logTag = "WUIEnvironment";
-    
+
+    private final Map<Integer, Consumer<Boolean>> permissionCallbacks = new HashMap<>();
+    private final AtomicInteger permissionRequestCodeCounter = new AtomicInteger(1000);
+
+    // ---- Initialization ----
+
     public WUIEnvironment(Context context, boolean developMode) throws JSONException {
         this.context = context;
         this.developMode = developMode;
@@ -119,6 +137,7 @@ public class WUIEnvironment {
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         webSettings.setBlockNetworkImage(false);
         webSettings.setBlockNetworkLoads(false);
+        log("i", "UserAgent: " + webSettings.getUserAgentString());
     }
 
     @SuppressLint("JavascriptInterface")
@@ -127,9 +146,41 @@ public class WUIEnvironment {
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                Log.d(logTag + " (JS)", consoleMessage.message() + " -- From line "
+                log("d", "(JS) " + consoleMessage.message() + " -- From line "
                         + consoleMessage.lineNumber() + " of "
                         + consoleMessage.sourceId());
+                return true;
+            }
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+                new AlertDialog.Builder(activity)
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok, (d, w) -> result.confirm())
+                    .setCancelable(false)
+                    .show();
+                return true;
+            }
+            @Override
+            public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
+                new AlertDialog.Builder(activity)
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok, (d, w) -> result.confirm())
+                    .setNegativeButton(android.R.string.cancel, (d, w) -> result.cancel())
+                    .setCancelable(false)
+                    .show();
+                return true;
+            }
+            @Override
+            public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+                EditText input = new EditText(activity);
+                if (defaultValue != null) input.setText(defaultValue);
+                new AlertDialog.Builder(activity)
+                    .setMessage(message)
+                    .setView(input)
+                    .setPositiveButton(android.R.string.ok, (d, w) -> result.confirm(input.getText().toString()))
+                    .setNegativeButton(android.R.string.cancel, (d, w) -> result.cancel())
+                    .setCancelable(false)
+                    .show();
                 return true;
             }
         });
@@ -149,14 +200,14 @@ public class WUIEnvironment {
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 int errorCode = error.getPrimaryError();
-                Log.e(logTag, "SSL error: " + error.toString());
+                log("e", "SSL error: " + error.toString());
                 switch (errorCode) {
-                    case SslError.SSL_DATE_INVALID: Log.e(logTag, "SSL error: Certificate date is invalid (code: " + errorCode + ")"); break;
-                    case SslError.SSL_EXPIRED: Log.e(logTag, "SSL error: Certificate has expired (code: " + errorCode + ")"); break;
-                    case SslError.SSL_IDMISMATCH: Log.e(logTag, "SSL error: Certificate ID mismatch (code: " + errorCode + ")"); break;
-                    case SslError.SSL_UNTRUSTED: Log.e(logTag, "SSL error: Certificate is not trusted (code: " + errorCode + ")"); break;
-                    case SslError.SSL_NOTYETVALID: Log.e(logTag, "SSL error: Certificate is not yet valid (code: " + errorCode + ")"); break;
-                    default: Log.e(logTag, "SSL error: Unknown SSL error (code: " + errorCode + ")"); break;
+                    case SslError.SSL_DATE_INVALID: log("e", "SSL error: Certificate date is invalid (code: " + errorCode + ")"); break;
+                    case SslError.SSL_EXPIRED: log("e", "SSL error: Certificate has expired (code: " + errorCode + ")"); break;
+                    case SslError.SSL_IDMISMATCH: log("e", "SSL error: Certificate ID mismatch (code: " + errorCode + ")"); break;
+                    case SslError.SSL_UNTRUSTED: log("e", "SSL error: Certificate is not trusted (code: " + errorCode + ")"); break;
+                    case SslError.SSL_NOTYETVALID: log("e", "SSL error: Certificate is not yet valid (code: " + errorCode + ")"); break;
+                    default: log("e", "SSL error: Unknown SSL error (code: " + errorCode + ")"); break;
                 }
                 if (developMode || errorCode == SslError.SSL_UNTRUSTED) {
                     handler.proceed();
@@ -169,16 +220,16 @@ public class WUIEnvironment {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
-                Log.e(logTag, "WebView Error (" + request.getUrl() + "): " + error.getDescription() + " (Code: " + error.getErrorCode() + ")");
+                log("e", "WebView Error (" + request.getUrl() + "): " + error.getDescription() + " (Code: " + error.getErrorCode() + ")");
                 if (request.isForMainFrame()) {
-                    Log.e(logTag, "Main frame failed to load!");
+                    log("e", "Main frame failed to load!");
                 }
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 pageLoaded = true;
-                Log.i(logTag, "Page loaded: " + url);
+                log("i", "Page loaded: " + url);
                 if (deepLinkURL != null) {
                     try {
                         JSONObject arguments = new JSONObject();
@@ -216,7 +267,7 @@ public class WUIEnvironment {
                 String filename = "";
                 File downloadFile = null;
                 boolean downloaded = false;
-                Log.d(logTag, "Start download '"+url+"'");
+                log("d", "Start download '"+url+"'");
                 if (url.startsWith("file:///android_asset/")) {
                     try {
                         String assetPath = url.replace("file:///android_asset/", "");
@@ -254,11 +305,11 @@ public class WUIEnvironment {
                                     out.write(buffer, 0, len);
                                 }
                             }
-                            Log.i(logTag, "Asset file downloaded to: " + downloadFile.getAbsolutePath());
+                            log("i", "Asset file downloaded to: " + downloadFile.getAbsolutePath());
                             downloaded = true;
                         }
                     } catch (Exception e) {
-                        Log.e(logTag, "Error downloading asset file: " + e.getMessage());
+                        log("e", "Error downloading asset file: " + e.getMessage());
                     }
                 } else if (url.startsWith("data:")) {
                     // downloadFile = ...;
@@ -286,7 +337,7 @@ public class WUIEnvironment {
                     try {
                         context.startActivity(openIntent);
                     } catch (Exception e) {
-                        Log.e(logTag, "No app found to open the file: " + e.getMessage());
+                        log("e", "No app found to open the file: " + e.getMessage());
                     }
                     try {
                         JSONObject arguments = new JSONObject();
@@ -301,6 +352,61 @@ public class WUIEnvironment {
                 }
             }
         });
+    }
+
+    // ---- Native bridge functions ----
+
+    public void requestPermission(String type, Consumer<Boolean> callback) {
+        String[] perms;
+        switch (type) {
+            case "location":
+                perms = new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION };
+                break;
+            case "notifications":
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    perms = new String[]{ Manifest.permission.POST_NOTIFICATIONS };
+                } else {
+                    callback.accept(true);
+                    return;
+                }
+                break;
+            case "camera":
+                perms = new String[]{ Manifest.permission.CAMERA };
+                break;
+            case "contacts":
+                perms = new String[]{ Manifest.permission.READ_CONTACTS };
+                break;
+            case "storage":
+                perms = new String[]{ Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE };
+                break;
+            default:
+                callback.accept(false);
+                return;
+        }
+        boolean allGranted = true;
+        for (String p : perms) {
+            if (ContextCompat.checkSelfPermission(activity, p) != PackageManager.PERMISSION_GRANTED) { allGranted = false; break; }
+        }
+        if (allGranted) {
+            callback.accept(true);
+            return;
+        }
+        // Permanent denial ("don't ask again") returns DENIED immediately via onRequestPermissionsResult,
+        // so the callback resolves with false without blocking — no extra heuristic needed.
+        final String[] permsFinal = perms;
+        int requestCode = permissionRequestCodeCounter.getAndIncrement();
+        permissionCallbacks.put(requestCode, callback);
+        activity.runOnUiThread(() -> ActivityCompat.requestPermissions(activity, permsFinal, requestCode));
+    }
+
+    public void handlePermissionResult(int requestCode, String[] permissions, int[] grantResults) {
+        Consumer<Boolean> callback = permissionCallbacks.remove(requestCode);
+        if (callback == null) return;
+        boolean granted = false;
+        for (int r : grantResults) {
+            if (r == PackageManager.PERMISSION_GRANTED) { granted = true; break; }
+        }
+        callback.accept(granted);
     }
 
     public boolean isAppInForeground() {
@@ -336,7 +442,7 @@ public class WUIEnvironment {
     private String getDeviceName() {
         try {
             if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                Log.w(logTag, "Bluetooth permission not granted, using Build.USER as device name");
+                log("w", "Bluetooth permission not granted, using Build.USER as device name");
                 return Build.USER;
             }
             BluetoothAdapter device = BluetoothAdapter.getDefaultAdapter();
@@ -344,10 +450,10 @@ public class WUIEnvironment {
                 return device.getName();
             }
         } catch (SecurityException e) {
-            Log.w(logTag, "SecurityException accessing Bluetooth: " + e.getMessage());
+            log("w", "SecurityException accessing Bluetooth: " + e.getMessage());
             return Build.USER;
         } catch (Exception e) {
-            Log.w(logTag, "Exception getting device name: " + e.getMessage());
+            log("w", "Exception getting device name: " + e.getMessage());
             return Build.USER;
         }
         return Build.USER;
@@ -510,13 +616,8 @@ public class WUIEnvironment {
     public JSONObject getCurrentPosition() {
         JSONObject position = new JSONObject();
         try {
-            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(activity, new String[] {
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                }, 1001);
-                position.put("error", "Location permission not granted. Requested permission.");
+            if (!requestPermissionSync("location")) {
+                position.put("error", "Location permission not granted");
                 return position;
             }
             LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
@@ -568,7 +669,7 @@ public class WUIEnvironment {
                         location = freshLocation[0];
                     }
                 } catch (Exception e) {
-                    Log.e(logTag, "Error requesting fresh location: " + e.getMessage());
+                    log("e", "Error requesting fresh location: " + e.getMessage());
                 }
             }
             if (location != null) {
@@ -580,7 +681,7 @@ public class WUIEnvironment {
             } else {
                 String status = "GPS: " + (isGpsEnabled ? "ON" : "OFF") + ", Network: " + (isNetworkEnabled ? "ON" : "OFF");
                 position.put("error", "Location unavailable. Cache is empty and fresh request timed out. " + status);
-                Log.w(logTag, "Could not get location. Status: " + status);
+                log("w", "Could not get location. Status: " + status);
             }
         } catch (Exception e) {
             try {
@@ -628,7 +729,7 @@ public class WUIEnvironment {
                         default: colorCode = ContextCompat.getColor(context, R.color.statusbarLightColor); break;
                     }
                 }
-                Log.i(logTag, "Statusbar set color: " + color);
+                log("i", "Statusbar set color: " + color);
                 window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
                 window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
                 window.setStatusBarColor(colorCode);
@@ -665,7 +766,7 @@ public class WUIEnvironment {
                         default: colorCode = ContextCompat.getColor(context, R.color.white); break;
                     }
                 }
-                Log.i(logTag, "Navigationbar set color: " + color);
+                log("i", "Navigationbar set color: " + color);
                 window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
                 window.setNavigationBarColor(colorCode);
                 View decor = window.getDecorView();
@@ -682,14 +783,68 @@ public class WUIEnvironment {
         });
     }
 
+    @SuppressLint("MissingPermission")
+    public void setAppBadge(int number) {
+        final int n = Math.max(0, number);
+        final String channelId = "wui_badge";
+        final int notificationId = 1;
+        final NotificationManagerCompat manager = NotificationManagerCompat.from(context);
+        final String manufacturer = Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase();
+        final boolean oemNativeBadge = manufacturer.matches(".*(samsung|xiaomi|huawei|honor|oppo|vivo|sony|htc|lg|asus).*");
+        if (n == 0) {
+            try { ShortcutBadger.removeCount(context); } catch (Exception ignore) {}
+            manager.cancel(notificationId);
+            return;
+        }
+        if (oemNativeBadge) {
+            try {
+                if (ShortcutBadger.applyCount(context, n)) {
+                    manager.cancel(notificationId);
+                    return;
+                }
+            } catch (Exception e) {
+                log("w", "ShortcutBadger failed, falling back to notification: " + e.getMessage());
+            }
+        }
+        requestPermission("notifications", granted -> {
+            if (!granted) {
+                log("w", "setAppBadge skipped: notifications permission denied");
+                return;
+            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    NotificationChannel channel = new NotificationChannel(channelId, "Badge", NotificationManager.IMPORTANCE_LOW);
+                    channel.setShowBadge(true);
+                    channel.setSound(null, null);
+                    channel.enableVibration(false);
+                    NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null) nm.createNotificationChannel(channel);
+                }
+                Notification notification = new NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(context.getApplicationInfo().icon)
+                    .setContentTitle(context.getApplicationInfo().loadLabel(context.getPackageManager()).toString())
+                    .setContentText(n + (n == 1 ? " notification" : " notifications"))
+                    .setNumber(n)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setSilent(true)
+                    .setOngoing(false)
+                    .setAutoCancel(true)
+                    .build();
+                manager.notify(notificationId, notification);
+            } catch (Exception e) {
+                log("e", "setAppBadge failed: " + e.getMessage());
+            }
+        });
+    }
+
     public boolean saveFile(String name, String content) {
         try (FileOutputStream fileOutput = activity.openFileOutput(name, Context.MODE_PRIVATE)) {
             fileOutput.write(content.getBytes("UTF-8"));
             fileOutput.flush();
-            Log.i(logTag, "File saved: " + name);
+            log("i", "File saved: " + name);
             return true;
         } catch (IOException e) {
-            Log.e(logTag, "Failed to save file: " + name + " - " + e.getMessage());
+            log("e", "Failed to save file: " + name + " - " + e.getMessage());
             return false;
         }
     }
@@ -703,10 +858,10 @@ public class WUIEnvironment {
                 baos.write(buffer, 0, len);
             }
             String result = baos.toString("UTF-8");
-            Log.i(logTag, "File readed: " + name);
+            log("i", "File readed: " + name);
             return result;
         } catch (IOException e) {
-            Log.e(logTag, "Failed to read file: " + name + " - " + e.getMessage());
+            log("e", "Failed to read file: " + name + " - " + e.getMessage());
             return null;
         }
     }
@@ -714,10 +869,10 @@ public class WUIEnvironment {
     public boolean removeFile(String name) {
         try {
             boolean result = activity.deleteFile(name);
-            Log.i(logTag, "File removed: " + name);
+            log("i", "File removed: " + name);
             return result;
         } catch (Exception e) {
-            Log.e(logTag, "Failed to remove file: " + name + " - " + e.getMessage());
+            log("e", "Failed to remove file: " + name + " - " + e.getMessage());
             return false;
         }
     }
@@ -730,14 +885,14 @@ public class WUIEnvironment {
     }
 
     public void openURL(final String url) {
-        Log.i(logTag, "openURL requested: " + url);
+        log("i", "openURL requested: " + url);
         if (url.startsWith("file:///android_asset/")) {
             String assetPath = url.replace("file:///android_asset/", "");
             try {
                 context.getAssets().open(assetPath).close();
-                Log.i(logTag, "Asset confirmed exists: " + assetPath);
+                log("i", "Asset confirmed exists: " + assetPath);
             } catch (IOException e) {
-                Log.e(logTag, "Asset NOT found via AssetManager: " + assetPath);
+                log("e", "Asset NOT found via AssetManager: " + assetPath);
             }
         }
         activity.runOnUiThread(new Runnable() {
@@ -786,6 +941,45 @@ public class WUIEnvironment {
         deepLinkURL = null;
     }
 
+    public void log(String message) {
+        log(message, false);
+    }
+
+    public void log(String message, boolean force) {
+        log("i", "[js] " + message, force);
+    }
+
+    // ---- Internal helpers ----
+
+    private boolean requestPermissionSync(String type) {
+        final boolean[] result = new boolean[]{ false };
+        final CountDownLatch latch = new CountDownLatch(1);
+        requestPermission(type, granted -> {
+            result[0] = granted;
+            latch.countDown();
+        });
+        try {
+            latch.await(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return result[0];
+    }
+
+    private void log(String level, String message) {
+        log(level, message, false);
+    }
+
+    private void log(String level, String message, boolean force) {
+        if (!developMode && !force) return;
+        switch (level) {
+            case "d": Log.d(logTag, message); break;
+            case "i": Log.i(logTag, message); break;
+            case "w": Log.w(logTag, message); break;
+            case "e": Log.e(logTag, message); break;
+        }
+    }
+
     private void pushJavascript(JSONObject arguments) {
         if (webView != null) {
             activity.runOnUiThread(() -> {
@@ -810,20 +1004,23 @@ public class WUIEnvironment {
                     func.equals("readFile") ? readFile(arguments.get("name").toString()) :
                     func.equals("readDeepLink") ? readDeepLink() :
                     "";
-            } else if (func.matches("^(isAppInForeground|getConnectionStatus|saveFile|removeFile)$")) {
+            } else if (func.matches("^(isAppInForeground|getConnectionStatus|saveFile|removeFile|requestPermission)$")) {
                 return
                     func.equals("isAppInForeground") && isAppInForeground() ? "true" :
                     func.equals("getConnectionStatus") && getConnectionStatus() ? "true" :
                     func.equals("saveFile") && saveFile(arguments.get("name").toString(), arguments.get("content").toString()) ? "true" :
                     func.equals("removeFile") && removeFile(arguments.get("name").toString()) ? "true" :
+                    func.equals("requestPermission") && requestPermissionSync(arguments.get("type").toString()) ? "true" :
                     "false";
-            } else if (func.matches("^(setStatusbarStyle|setNavigationbarStyle|openAppSettings|openURL|clearDeepLink)$")) {
+            } else if (func.matches("^(setStatusbarStyle|setNavigationbarStyle|setAppBadge|openAppSettings|openURL|clearDeepLink|log)$")) {
                 switch (func) {
                     case "setStatusbarStyle": setStatusbarStyle(arguments.get("color").toString(), (Boolean) arguments.get("darkIcons")); break;
                     case "setNavigationbarStyle": setNavigationbarStyle(arguments.get("color").toString(), (Boolean) arguments.get("darkIcons")); break;
+                    case "setAppBadge": setAppBadge(arguments.getInt("number")); break;
                     case "openAppSettings": openAppSettings(); break;
                     case "openURL": openURL(arguments.get("url").toString()); break;
                     case "clearDeepLink": clearDeepLink(); break;
+                    case "log": log(arguments.get("message").toString(), arguments.optBoolean("force", false)); break;
                 }
                 return "null";
             }

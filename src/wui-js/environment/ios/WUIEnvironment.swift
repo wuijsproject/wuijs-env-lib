@@ -1,10 +1,10 @@
-//
-//  File: WUIEnvironment.swift
-//  Class: WUIEnvironment
-//  Version: 0.1
-//  Author: Sergio E. Belmar V. (wuijs.project@gmail.com)
-//  Copyright: Sergio E. Belmar V. (wuijs.project@gmail.com)
-//
+/*
+ * @file WUIEnvironment.swift
+ * @class WUIEnvironment
+ * @version 0.1
+ * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
+ * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
+ */
 
 import Foundation
 import WebKit
@@ -31,9 +31,8 @@ class WUIEnvironment: NSObject {
     private var isConnected: Bool = false
     private var locationManager: CLLocationManager?
     private var locationCompletion: (([String: Any]) -> Void)?
+    private var permissionLocationCompletion: ((Bool) -> Void)?
     private var downloadDestinations: [ObjectIdentifier: (url: URL, mimeType: String)] = [:]
-
-    // MARK: - Constructor
 
     init(viewController: UIViewController, developMode: Bool = false) {
         super.init()
@@ -43,20 +42,26 @@ class WUIEnvironment: NSObject {
         setupNetworkMonitor()
     }
 
-    // MARK: - Private Setup
+    init(viewController: UIViewController) {
+        super.init()
+        self.viewController = viewController
+        webViewInit()
+        setupNetworkMonitor()
+    }
+
+    // MARK: - Initialization
 
     private func webViewInit() {
         let contentController = WKUserContentController()
-        contentController.add(self, name: "request")
         let xhrPatch = """
             (function() {
                 let _seq = 0;
                 const _pending = {};
-                window._wuiXhrRespond = function(code, content) {
+                window._wuiXhrRespond = function(code, content, status) {
                     const resolve = _pending[code];
                     if (!resolve) return;
                     delete _pending[code];
-                    resolve(content);
+                    resolve({ content: content, status: status });
                 };
                 const _OrigXHR = window.XMLHttpRequest;
                 window.XMLHttpRequest = function() {
@@ -87,8 +92,8 @@ class WUIEnvironment: NSObject {
                             if (!_isFile) { if (_native) _native.send(); return; }
                             if (!_async)  { return; }
                             const code = ++_seq;
-                            _pending[code] = function(text) {
-                                _status = 0; _responseText = text;
+                            _pending[code] = function(res) {
+                                _status = res.status; _responseText = res.content;
                                 if (typeof _onload === 'function') _onload.call(proxy);
                             };
                             webkit.messageHandlers.request.postMessage({ func: '_xhrRead', url: _url, code: code });
@@ -99,6 +104,7 @@ class WUIEnvironment: NSObject {
             })();
         """
         let xhrScript = WKUserScript(source: xhrPatch, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        contentController.add(self, name: "request")
         contentController.addUserScript(xhrScript)
         if developMode {
             let consoleBridge = """
@@ -114,8 +120,8 @@ class WUIEnvironment: NSObject {
                     window.addEventListener('unhandledrejection', function(e) { _log('error', ['[unhandledrejection]', e.reason]); });
                 })();
             """
-            let script = WKUserScript(source: consoleBridge, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-            contentController.addUserScript(script)
+            let consoleScript = WKUserScript(source: consoleBridge, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+            contentController.addUserScript(consoleScript)
         }
         let config = WKWebViewConfiguration()
         config.userContentController = contentController
@@ -131,6 +137,7 @@ class WUIEnvironment: NSObject {
         webView.uiDelegate = self
         webView.scrollView.maximumZoomScale = 5.0
         webView.scrollView.minimumZoomScale = 0.5
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         if let vc = viewController {
             vc.view.addSubview(webView)
             webView.translatesAutoresizingMaskIntoConstraints = false
@@ -159,6 +166,7 @@ class WUIEnvironment: NSObject {
                 let model = device.model.lowercased().contains("ipad") ? "iPad" : "iPhone"
                 self.webView.customUserAgent = "Mozilla/5.0 (\(model); CPU iPhone OS \(sysVersion) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 WUIEnvironment (\(name)/\(version))"
             }
+            self.log("UserAgent: \(self.webView.customUserAgent ?? "")")
         }
     }
 
@@ -170,7 +178,71 @@ class WUIEnvironment: NSObject {
         networkMonitor?.start(queue: networkQueue)
     }
 
-    // MARK: - Public Methods
+    // MARK: - Native bridge functions
+
+    func requestPermission(type: String, completion: @escaping (Bool) -> Void) {
+        switch type {
+            case "location":
+                let status = CLLocationManager().authorizationStatus
+                switch status {
+                    case .authorizedAlways, .authorizedWhenInUse:
+                        completion(true)
+                    case .denied, .restricted:
+                        completion(false)
+                    case .notDetermined:
+                        permissionLocationCompletion = completion
+                        let manager = CLLocationManager()
+                        manager.delegate = self
+                        locationManager = manager
+                        manager.requestWhenInUseAuthorization()
+                    @unknown default:
+                        completion(false)
+                }
+            case "notifications":
+                UNUserNotificationCenter.current().getNotificationSettings { settings in
+                    switch settings.authorizationStatus {
+                        case .authorized, .provisional, .ephemeral:
+                            DispatchQueue.main.async { completion(true) }
+                        case .denied:
+                            DispatchQueue.main.async { completion(false) }
+                        case .notDetermined:
+                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                                DispatchQueue.main.async { completion(granted) }
+                            }
+                        @unknown default:
+                            DispatchQueue.main.async { completion(false) }
+                    }
+                }
+            case "camera":
+                switch AVCaptureDevice.authorizationStatus(for: .video) {
+                    case .authorized:
+                        completion(true)
+                    case .denied, .restricted:
+                        completion(false)
+                    case .notDetermined:
+                        AVCaptureDevice.requestAccess(for: .video) { granted in
+                            DispatchQueue.main.async { completion(granted) }
+                        }
+                    @unknown default:
+                        completion(false)
+                }
+            case "contacts":
+                switch CNContactStore.authorizationStatus(for: .contacts) {
+                    case .authorized, .limited:
+                        completion(true)
+                    case .denied, .restricted:
+                        completion(false)
+                    case .notDetermined:
+                        CNContactStore().requestAccess(for: .contacts) { granted, _ in
+                            DispatchQueue.main.async { completion(granted) }
+                        }
+                    @unknown default:
+                        completion(false)
+                }
+            default:
+                completion(false)
+        }
+    }
 
     func isAppInForeground() -> Bool {
         var result = false
@@ -227,7 +299,6 @@ class WUIEnvironment: NSObject {
                     statusbarLightMode = scene.statusBarManager?.statusBarStyle == .darkContent
                 }
             }
-            // Transparent when no opaque overlay is placed over that area by WUIEnvironment
             let statusbarTransparent = !(self.statusbarView != nil && (self.statusbarView?.backgroundColor?.cgColor.alpha ?? 0) > 0.01)
             let navigationbarTransparent = !(self.navigationbarView != nil && (self.navigationbarView?.backgroundColor?.cgColor.alpha ?? 0) > 0.01)
             result = [
@@ -245,8 +316,8 @@ class WUIEnvironment: NSObject {
                 "statusbarTransparent":      statusbarTransparent,
                 "statusbarLightMode":        statusbarLightMode,
                 "navigationbarTransparent":  navigationbarTransparent,
-                "navigationbarLightMode":    false, // iOS home indicator adapts automatically; no programmatic control
-                "systembarDrawsBackgrounds": false  // Android-specific concept; not applicable on iOS
+                "navigationbarLightMode":    false,
+                "systembarDrawsBackgrounds": false
             ]
         }
         Thread.isMainThread ? read() : DispatchQueue.main.sync { read() }
@@ -263,7 +334,6 @@ class WUIEnvironment: NSObject {
         ]
     }
 
-    /// Async — result is delivered via completion on the main thread.
     func getPermissionsStatus(completion: @escaping ([String: Any]) -> Void) {
         var permissions: [String: String] = [
             "phone":         "undefined",
@@ -273,24 +343,18 @@ class WUIEnvironment: NSObject {
             "camera":        "undefined",
             "notifications": "undefined"
         ]
-
-        // Location (sync)
         switch CLLocationManager().authorizationStatus {
             case .authorizedAlways, .authorizedWhenInUse: permissions["location"] = "granted"
             case .denied, .restricted:                    permissions["location"] = "denied"
             case .notDetermined:                          permissions["location"] = "default"
             @unknown default: break
         }
-
-        // Camera (sync)
         switch AVCaptureDevice.authorizationStatus(for: .video) {
             case .authorized:            permissions["camera"] = "granted"
             case .denied, .restricted:   permissions["camera"] = "denied"
             case .notDetermined:         permissions["camera"] = "default"
             @unknown default: break
         }
-
-        // Contacts (sync)
         switch CNContactStore.authorizationStatus(for: .contacts) {
             case .authorized:            permissions["contacts"] = "granted"
             case .denied, .restricted:   permissions["contacts"] = "denied"
@@ -298,8 +362,7 @@ class WUIEnvironment: NSObject {
             case .limited:               permissions["contacts"] = "granted"
             @unknown default: break
         }
-
-        // Notifications (async — must be last)
+        // Notifications must be resolved last; it is the only async status.
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             switch settings.authorizationStatus {
                 case .authorized, .provisional: permissions["notifications"] = "granted"
@@ -312,30 +375,29 @@ class WUIEnvironment: NSObject {
         }
     }
 
-    /// Async — result is delivered via completion on the main thread.
-    /// Setting delegate = self triggers locationManagerDidChangeAuthorization immediately
-    /// on iOS 14+, which handles all authorization states without reading authorizationStatus
-    /// synchronously on the main thread.
     func getCurrentPosition(completion: @escaping ([String: Any]) -> Void) {
-        locationCompletion = completion
-        let manager = CLLocationManager()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager = manager
-        manager.requestWhenInUseAuthorization()
+        requestPermission(type: "location") { [weak self] granted in
+            guard let self = self, granted else {
+                completion(["error": "Location permission denied"])
+                return
+            }
+            self.locationCompletion = completion
+            let manager = CLLocationManager()
+            manager.delegate = self
+            manager.desiredAccuracy = kCLLocationAccuracyBest
+            self.locationManager = manager
+            manager.requestLocation()
+        }
     }
 
     func getConnectionStatus() -> Bool {
-        // currentPath reads the live state synchronously; isConnected is a stale async fallback.
+        // currentPath is live; isConnected is a stale async fallback.
         if let monitor = networkMonitor {
             return monitor.currentPath.status == .satisfied
         }
         return isConnected
     }
 
-    /// Sets the status bar background color and icon style.
-    /// To control the icon style (dark/light icons), the host ViewController must expose
-    /// `preferredStatusBarStyle` via this instance and call `setNeedsStatusBarAppearanceUpdate()`.
     func setStatusbarStyle(color: String, darkIcons: Bool) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let vc = self.viewController else { return }
@@ -354,16 +416,13 @@ class WUIEnvironment: NSObject {
             self.statusbarView = view
             self.preferredStatusBarStyle = darkIcons ? .darkContent : .lightContent
             vc.setNeedsStatusBarAppearanceUpdate()
-            // In SwiftUI apps UIHostingController doesn't forward childForStatusBarStyle,
-            // so propagate icon style via window overrideUserInterfaceStyle as fallback.
+            // UIHostingController doesn't forward childForStatusBarStyle in SwiftUI apps;
+            // propagate icon style via window overrideUserInterfaceStyle as fallback.
             window?.overrideUserInterfaceStyle = darkIcons ? .light : .dark
-            NSLog("%@ Statusbar set color: %@, darkIcons: %@", self.logTag, color, darkIcons ? "true" : "false")
+            self.log("Statusbar set color: \(color), darkIcons: \(darkIcons)")
         }
     }
 
-    /// Sets a background color over the home indicator area (iOS safe area bottom inset).
-    /// iOS does not expose a system-level navigation bar equivalent to Android's;
-    /// this method places a UIView overlay over the bottom safe area.
     func setNavigationbarStyle(color: String, darkIcons: Bool) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let vc = self.viewController else { return }
@@ -383,7 +442,24 @@ class WUIEnvironment: NSObject {
             vc.view.addSubview(view)
             vc.view.bringSubviewToFront(view)
             self.navigationbarView = view
-            NSLog("%@ Navigationbar set color: %@", self.logTag, color)
+            self.log("Navigationbar set color: \(color)")
+        }
+    }
+
+    func setAppBadge(number: Int) {
+        requestPermission(type: "notifications") { [weak self] granted in
+            guard granted else {
+                self?.log("AppBadge skipped: notifications permission denied")
+                return
+            }
+            DispatchQueue.main.async {
+                if #available(iOS 16.0, *) {
+                    UNUserNotificationCenter.current().setBadgeCount(number)
+                } else {
+                    UIApplication.shared.applicationIconBadgeNumber = number
+                }
+                self?.log("AppBadge set: \(number)")
+            }
         }
     }
 
@@ -398,10 +474,10 @@ class WUIEnvironment: NSObject {
                 try fm.createDirectory(at: parentDir, withIntermediateDirectories: true)
             }
             try content.write(to: url, atomically: true, encoding: .utf8)
-            NSLog("%@ File saved: %@", logTag, name)
+            log("File saved: \(name)")
             return true
         } catch {
-            NSLog("%@ Failed to save file: %@ - %@", logTag, name, error.localizedDescription)
+            log("Failed to save file: \(name) - \(error.localizedDescription)")
             return false
         }
     }
@@ -411,10 +487,10 @@ class WUIEnvironment: NSObject {
         guard let url = fm.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(name) else { return nil }
         do {
             let content = try String(contentsOf: url, encoding: .utf8)
-            NSLog("%@ File read: %@", logTag, name)
+            log("File read: \(name)")
             return content
         } catch {
-            NSLog("%@ Failed to read file: %@ - %@", logTag, name, error.localizedDescription)
+            log("Failed to read file: \(name) - \(error.localizedDescription)")
             return nil
         }
     }
@@ -425,10 +501,10 @@ class WUIEnvironment: NSObject {
         guard let url = fm.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(name) else { return false }
         do {
             try fm.removeItem(at: url)
-            NSLog("%@ File removed: %@", logTag, name)
+            log("File removed: \(name)")
             return true
         } catch {
-            NSLog("%@ Failed to remove file: %@ - %@", logTag, name, error.localizedDescription)
+            log("Failed to remove file: \(name) - \(error.localizedDescription)")
             return false
         }
     }
@@ -444,9 +520,9 @@ class WUIEnvironment: NSObject {
     func openURL(url: String) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            NSLog("%@ openURL requested: %@", self.logTag, url)
+            self.log("openURL requested: \(url)")
             if url.hasPrefix("file://"), let rawURL = URL(string: url) {
-                // file:/// + /absolute/path produces file:////path (4 slashes). Strip extra leading slashes.
+                // file:/// + /absolute/path produces file:////path (4 slashes); strip extra leading slashes.
                 var cleanPath = rawURL.path
                 while cleanPath.hasPrefix("//") { cleanPath = String(cleanPath.dropFirst()) }
                 let fileURL = URL(fileURLWithPath: cleanPath)
@@ -476,7 +552,12 @@ class WUIEnvironment: NSObject {
         deepLinkURL = nil
     }
 
-    // MARK: - Private Helpers
+    func log(_ message: @autoclosure () -> String, force: Bool = false) {
+        guard developMode || force else { return }
+        NSLog("%@ %@", logTag, message())
+    }
+
+    // MARK: - Internal helpers
 
     private func pushJavascript(arguments: [String: Any]) {
         guard let data = try? JSONSerialization.data(withJSONObject: arguments),
@@ -501,13 +582,10 @@ class WUIEnvironment: NSObject {
                 alpha: CGFloat((value >> 24) & 0xFF) / 255
             )
         }
-        // Named colors are resolved from the app's Assets.xcassets via UIColor(named:).
-        // The host app must define color sets for all used names (see documentation).
+        // Named colors resolved from Assets.xcassets; host app must define the color sets.
         return UIColor(named: color)
     }
 
-    /// Saves a downloaded file from `tempURL` to Documents/Downloads, avoiding name collisions,
-    /// then fires `onDownloadFile` toward JS and presents the system share sheet.
     private func saveDownloadedFile(from tempURL: URL, filename: String, mimeType: String) {
         let fm = FileManager.default
         guard let dir = fm.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
@@ -526,7 +604,7 @@ class WUIEnvironment: NSObject {
         }
         do {
             try fm.moveItem(at: tempURL, to: destURL)
-            NSLog("%@ File downloaded: %@", logTag, destURL.path)
+            log("File downloaded: \(destURL.path)")
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.pushJavascript(arguments: [
@@ -538,13 +616,10 @@ class WUIEnvironment: NSObject {
                 self.presentShareSheet(for: destURL)
             }
         } catch {
-            NSLog("%@ Failed to save downloaded file: %@", logTag, error.localizedDescription)
+            log("Failed to save downloaded file: \(error.localizedDescription)")
         }
     }
 
-    /// Downloads a file to Documents/Downloads without navigating the webview.
-    /// Used to handle window.open() calls that should behave as downloads.
-    /// Local file:// URLs are copied; remote URLs are fetched via URLSession.
     private func downloadFileInBackground(url: URL) {
         let filename = url.lastPathComponent.isEmpty ? "download" : url.lastPathComponent
         if url.isFileURL {
@@ -566,7 +641,7 @@ class WUIEnvironment: NSObject {
             }
             do {
                 try fm.copyItem(at: url, to: destURL)
-                NSLog("%@ File copied to downloads: %@", logTag, destURL.path)
+                log("File copied to downloads: \(destURL.path)")
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
                     self.pushJavascript(arguments: [
@@ -578,13 +653,13 @@ class WUIEnvironment: NSObject {
                     self.presentShareSheet(for: destURL)
                 }
             } catch {
-                NSLog("%@ Failed to copy file to downloads: %@", logTag, error.localizedDescription)
+                log("Failed to copy file to downloads: \(error.localizedDescription)")
             }
         } else {
-            NSLog("%@ Start background download: %@", logTag, filename)
+            log("Start background download: \(filename)")
             URLSession.shared.downloadTask(with: url) { [weak self] tempURL, response, error in
                 guard let self = self, let tempURL = tempURL else {
-                    NSLog("%@ Background download failed: %@", self?.logTag ?? "WUIEnvironment", error?.localizedDescription ?? "unknown")
+                    self?.log("Background download failed: \(error?.localizedDescription ?? "unknown")")
                     return
                 }
                 let mimeType = response?.mimeType ?? self.mimeTypeForExtension(url.pathExtension)
@@ -620,8 +695,6 @@ class WUIEnvironment: NSObject {
     }
 }
 
-// MARK: - WKScriptMessageHandler
-
 extension WUIEnvironment: WKScriptMessageHandler {
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -645,11 +718,13 @@ extension WUIEnvironment: WKScriptMessageHandler {
             case "getAppInfo":
                 push(getAppInfo())
             case "getPermissionsStatus":
-                // Async: push happens in completion handler
                 getPermissionsStatus { result in push(result) }
                 return
+            case "requestPermission":
+                let type = json["type"] as? String ?? ""
+                requestPermission(type: type) { granted in push(granted) }
+                return
             case "getCurrentPosition":
-                // Async: push happens in CLLocationManagerDelegate
                 getCurrentPosition { result in push(result) }
                 return
             case "getConnectionStatus":
@@ -663,6 +738,10 @@ extension WUIEnvironment: WKScriptMessageHandler {
                 if let color = json["color"] as? String, let darkIcons = json["darkIcons"] as? Bool {
                     setNavigationbarStyle(color: color, darkIcons: darkIcons)
                 }
+                push("null")
+            case "setAppBadge":
+                let number = json["number"] as? Int ?? 0
+                setAppBadge(number: number)
                 push("null")
             case "saveFile":
                 if let name = json["name"] as? String, let content = json["content"] as? String {
@@ -693,20 +772,27 @@ extension WUIEnvironment: WKScriptMessageHandler {
             case "clearDeepLink":
                 clearDeepLink()
                 push("null")
+            case "log":
+                let message = json["message"] as? String ?? ""
+                let force = json["force"] as? Bool ?? false
+                log("[js] \(message)", force: force)
+                return
             case "_xhrRead":
                 guard let urlString = json["url"] as? String, let code = json["code"] as? Int else { return }
                 var path = URL(string: urlString)?.path ?? urlString
                 while path.hasPrefix("//") { path = String(path.dropFirst()) }
+                let fileExists = FileManager.default.fileExists(atPath: path)
                 let fileContent = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
+                let status = fileExists ? 200 : 404
                 guard let jsonData = try? JSONEncoder().encode(fileContent),
                       let jsonStr  = String(data: jsonData, encoding: .utf8) else { return }
-                let xhrJs = "window._wuiXhrRespond(\(code), \(jsonStr))"
+                let xhrJs = "window._wuiXhrRespond(\(code), \(jsonStr), \(status))"
                 DispatchQueue.main.async { [weak self] in self?.webView.evaluateJavaScript(xhrJs, completionHandler: nil) }
                 return
             case "_console":
                 let level = json["level"] as? String ?? "log"
                 let msg   = json["msg"]   as? String ?? ""
-                NSLog("%@ [js:%@] %@", logTag, level, msg)
+                log("[js:\(level)] \(msg)")
                 return
             default:
                 push("")
@@ -714,22 +800,20 @@ extension WUIEnvironment: WKScriptMessageHandler {
     }
 }
 
-// MARK: - WKNavigationDelegate
-
 extension WUIEnvironment: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         pageLoaded = true
-        NSLog("%@ Page loaded: %@", logTag, webView.url?.absoluteString ?? "")
+        log("Page loaded: \(webView.url?.absoluteString ?? "")")
         sendDeepLink()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        NSLog("%@ WebView error: %@", logTag, error.localizedDescription)
+        log("WebView error: \(error.localizedDescription)")
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        NSLog("%@ WebView provisional navigation error: %@", logTag, error.localizedDescription)
+        log("WebView provisional navigation error: \(error.localizedDescription)")
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -747,9 +831,6 @@ extension WUIEnvironment: WKNavigationDelegate {
         }
     }
 
-    /// Intercepts responses that should be downloaded rather than rendered.
-    /// Mirrors Android's DownloadListener: fires when MIME type is not natively renderable
-    /// or when the server sets Content-Disposition: attachment.
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
         let mimeType = navigationResponse.response.mimeType ?? "application/octet-stream"
         let renderableMimeTypes: Set<String> = [
@@ -771,13 +852,12 @@ extension WUIEnvironment: WKNavigationDelegate {
         if #available(iOS 14.5, *) {
             decisionHandler(.download)
         } else {
-            // Fallback for iOS < 14.5: download via URLSession
             if let url = navigationResponse.response.url {
                 let suggestedFilename = navigationResponse.response.suggestedFilename ?? url.lastPathComponent
-                NSLog("%@ Start download (URLSession fallback): %@", logTag, suggestedFilename)
+                log("Start download (URLSession fallback): \(suggestedFilename)")
                 URLSession.shared.downloadTask(with: url) { [weak self] tempURL, _, error in
                     guard let self = self, let tempURL = tempURL else {
-                        NSLog("%@ URLSession download failed: %@", self?.logTag ?? "WUIEnvironment", error?.localizedDescription ?? "unknown")
+                        self?.log("URLSession download failed: \(error?.localizedDescription ?? "unknown")")
                         return
                     }
                     self.saveDownloadedFile(from: tempURL, filename: suggestedFilename, mimeType: mimeType)
@@ -797,8 +877,6 @@ extension WUIEnvironment: WKNavigationDelegate {
         download.delegate = self
     }
 }
-
-// MARK: - WKDownloadDelegate
 
 @available(iOS 14.5, *)
 extension WUIEnvironment: WKDownloadDelegate {
@@ -822,22 +900,22 @@ extension WUIEnvironment: WKDownloadDelegate {
             destURL = downloadsDir.appendingPathComponent(newName)
             version += 1
         }
-        NSLog("%@ Download destination: %@", logTag, destURL.path)
+        log("Download destination: \(destURL.path)")
         let mimeType = response.mimeType ?? "application/octet-stream"
         downloadDestinations[ObjectIdentifier(download)] = (url: destURL, mimeType: mimeType)
         completionHandler(destURL)
     }
-    
+
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         downloadDestinations.removeValue(forKey: ObjectIdentifier(download))
-        NSLog("%@ Download failed: %@", logTag, error.localizedDescription)
+        log("Download failed: \(error.localizedDescription)")
     }
 
     func downloadDidFinish(_ download: WKDownload) {
         let key = ObjectIdentifier(download)
         guard let info = downloadDestinations[key] else { return }
         downloadDestinations.removeValue(forKey: key)
-        NSLog("%@ Download finished: %@", logTag, info.url.lastPathComponent)
+        log("Download finished: \(info.url.lastPathComponent)")
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.pushJavascript(arguments: [
@@ -850,8 +928,6 @@ extension WUIEnvironment: WKDownloadDelegate {
         }
     }
 }
-
-// MARK: - CLLocationManagerDelegate
 
 extension WUIEnvironment: CLLocationManagerDelegate {
 
@@ -872,7 +948,7 @@ extension WUIEnvironment: CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        NSLog("%@ Location error: %@", logTag, error.localizedDescription)
+        log("Location error: \(error.localizedDescription)")
         DispatchQueue.main.async { [weak self] in
             self?.locationCompletion?(["error": "Failed to get location: \(error.localizedDescription)"])
             self?.locationCompletion = nil
@@ -881,10 +957,25 @@ extension WUIEnvironment: CLLocationManagerDelegate {
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        if let permissionCompletion = permissionLocationCompletion {
+            switch manager.authorizationStatus {
+                case .authorizedWhenInUse, .authorizedAlways:
+                    permissionLocationCompletion = nil
+                    locationManager = nil
+                    DispatchQueue.main.async { permissionCompletion(true) }
+                case .denied, .restricted:
+                    permissionLocationCompletion = nil
+                    locationManager = nil
+                    DispatchQueue.main.async { permissionCompletion(false) }
+                default:
+                    break
+            }
+            return
+        }
         switch manager.authorizationStatus {
             case .authorizedWhenInUse, .authorizedAlways:
-                // locationServicesEnabled() is not checked here to avoid the main-thread
-                // unresponsiveness warning — didFailWithError handles the disabled case.
+                // locationServicesEnabled() is intentionally not checked here to avoid the
+                // main-thread unresponsiveness warning; didFailWithError handles that case.
                 manager.requestLocation()
             case .denied, .restricted:
                 DispatchQueue.main.async { [weak self] in
@@ -898,16 +989,36 @@ extension WUIEnvironment: CLLocationManagerDelegate {
     }
 }
 
-// MARK: - WKUIDelegate
-
 extension WUIEnvironment: WKUIDelegate {
 
-    /// Intercepts window.open() calls from JS and routes them as background downloads,
-    /// matching the Android behavior: no navigation occurs, onDownloadFile fires on completion.
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if let url = navigationAction.request.url {
             downloadFileInBackground(url: url)
         }
         return nil
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        guard let vc = viewController else { completionHandler(); return }
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
+        vc.present(alert, animated: true)
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        guard let vc = viewController else { completionHandler(false); return }
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in completionHandler(false) })
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
+        vc.present(alert, animated: true)
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        guard let vc = viewController else { completionHandler(nil); return }
+        let alert = UIAlertController(title: nil, message: prompt, preferredStyle: .alert)
+        alert.addTextField { $0.text = defaultText }
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in completionHandler(nil) })
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(alert.textFields?.first?.text) })
+        vc.present(alert, animated: true)
     }
 }
