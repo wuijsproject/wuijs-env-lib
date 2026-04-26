@@ -13,9 +13,9 @@
 	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
-**Versión librería**: `0.1.0`
+**Versión librería**: `0.1.0` ([Registro de Cambios](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-es.md))
 
-**Versión documentación**: `0.1.0.20260425.1`
+**Versión documentación**: `0.1.0.20260425.0`
 
 **Licencia**: `Licencia Apache 2.0`
 

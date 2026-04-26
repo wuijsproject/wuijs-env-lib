@@ -523,7 +523,7 @@ public class WUIEnvironment {
             try {
 				// Navigation Mode detection (Gestures vs Buttons)
 				// 0: 3-button, 1: 2-button, 2: Gestures
-					int mode = Settings.Secure.getInt(context.getContentResolver(), "navigation_mode");
+				int mode = Settings.Secure.getInt(context.getContentResolver(), "navigation_mode");
                 navigationMode = mode == 2 ? "gestures" : mode == 1 ? "2-button" : "3-button";
             } catch (Settings.SettingNotFoundException e) {
                 // On some Honor/Huawei devices detect by bar height

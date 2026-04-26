@@ -34,6 +34,6 @@
 	],
 	"scripts": {
 		"prepack": "rm README.md && cp NPM.md README.md && cp -r src/wui-js/environment/. .",
-		"postpack": "ln -s docs/README-en.md README.md && ls src/wui-js/environment/ | grep -vE '^LICENSE$' | xargs rm -rf"
+		"postpack": "rm -f README.md && ln -s docs/README-en.md README.md && ls src/wui-js/environment/ | grep -vE '^LICENSE$' | xargs rm -rf"
 	}
 }

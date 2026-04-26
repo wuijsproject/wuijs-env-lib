@@ -13,7 +13,7 @@
 	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
-**Library version**: `0.1.0`
+**Library version**: `0.1.0` ([Change Log](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-en.md))
 
 **Documentation version**: `0.1.0.20260425.0`
 
