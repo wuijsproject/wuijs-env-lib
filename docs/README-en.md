@@ -95,6 +95,7 @@ The repository directory structure is:
 
 ```bash
 wuijs-environment-lib/
+├── docs/
 ├── imgs/
 │   └── logo/
 └── src/
@@ -106,16 +107,17 @@ wuijs-environment-lib/
             └── demo/
 ```
 
-| Path                                                                 | Description |
-| -------------------------------------------------------------------- | ----------- |
-| [imgs](../imgs/)                                                     | Images used in the documentation. |
-| [imgs/logo](../imgs/logo/)                                           | Project logotype and isotype in SVG and PNG format. |
-| [src](../src/)                                                       | Main sources for the latest version. |
-| [src/wui-js](../src/wui-js)                                          | WUI/JS Project directory. |
-| [src/wui-js/environment/android](../src/wui-js/environment/android/) | WUI/JS Environment library for Android. |
-| [src/wui-js/environment/ios](../src/wui-js/environment/ios/)         | WUI/JS Environment library for iOS. |
-| [src/wui-js/environment/web](../src/wui-js/environment/web/)         | WUI/JS Environment library for Web. |
-| [src/wui-js/environment/demo](../src/wui-js/environment/demo/)       | Directory with the demo interface for Android and iOS environments. |
+| Path                                                                                                                        | Description |
+| --------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| [docs](https://github.com/wui-js/wuijs-environment-lib/tree/main/docs/)                                                     | Documentation. |
+| [imgs](https://github.com/wui-js/wuijs-environment-lib/tree/main/imgs/)                                                     | Images used in the documentation. |
+| [imgs/logo](https://github.com/wui-js/wuijs-environment-lib/tree/main/imgs/logo/)                                           | Project logotype and isotype in SVG and PNG format. |
+| [src](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/)                                                       | Main sources for the latest version. |
+| [src/wui-js](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/wui-js)                                          | WUI/JS Project directory. |
+| [src/wui-js/environment/android](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/wui-js/environment/android/) | WUI/JS Environment library for Android. |
+| [src/wui-js/environment/ios](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/wui-js/environment/ios/)         | WUI/JS Environment library for iOS. |
+| [src/wui-js/environment/web](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/wui-js/environment/web/)         | WUI/JS Environment library for Web. |
+| [src/wui-js/environment/demo](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/wui-js/environment/demo/)       | Directory with the demo interface for Android and iOS environments. |
 
 > [!NOTE]
 > The `wuijs-environment-lib` library operates jointly, meaning the **Android + Web** or **iOS + Web** combination must be implemented for it to work correctly.
