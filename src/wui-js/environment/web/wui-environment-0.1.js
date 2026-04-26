@@ -70,8 +70,8 @@ class WUIEnvironment {
 			) : this.#platform.match(/win/i) ? ("Windows"
 			) : "";
 		this.#environment =
-			this.#userAgent.match(/WUIEnvironment/i) && this.#userAgent.match(/android/i) && typeof (Android) != "undefined" ? ("wui.android"
-			) : this.#userAgent.match(/WUIEnvironment/i) && this.#userAgent.match(/iphone|ipad/i) && typeof (webkit) != "undefined" && typeof (webkit.messageHandlers) != "undefined" ? ("wui.ios"
+			this.#userAgent.match(/WUIEnvironment/i) && this.#userAgent.match(/android/i) && typeof (Android) != "undefined" ? ("local.android"
+			) : this.#userAgent.match(/WUIEnvironment/i) && this.#userAgent.match(/iphone|ipad/i) && typeof (webkit) != "undefined" && typeof (webkit.messageHandlers) != "undefined" ? ("local.ios"
 			) : ("web");
 		Object.entries(defaults).forEach(([name, value]) => {
 			this[name] = name in properties ? properties[name] : value;
@@ -141,7 +141,7 @@ class WUIEnvironment {
 	#request(options) {
 		this.#reqCount++;
 		return new Promise((resolve) => {
-			if (this.#environment == "wui.android") {
+			if (this.#environment == "local.android") {
 				const response = Android.request(JSON.stringify(options));
 				if (options.func.match(/^(getDeviceInfo|getDisplayInfo|getAppInfo|getPermissionsStatus|getCurrentPosition|requestPermission)$/) || (options.func == "readFile" && options.name.match(/\.json$/i))) {
 					resolve(JSON.parse(response || "{}"));
@@ -152,7 +152,7 @@ class WUIEnvironment {
 				if (this.#reqCount === this.#resCount && typeof this.#onReady === "function") {
 					this.#onReady(this.#reqCount);
 				}
-			} else if (this.#environment == "wui.ios") {
+			} else if (this.#environment == "local.ios") {
 				const code = this.#reqCount;
 				this.#responses[code] = null;
 				options.code = code;
@@ -177,7 +177,7 @@ class WUIEnvironment {
 	}
 
 	requestPermission(type, done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "requestPermission", type: type }).then(done);
 		} else if (navigator.permissions) {
 			const queryName = type == "location" ? "geolocation" : type;
@@ -197,26 +197,42 @@ class WUIEnvironment {
 		return null;
 	}
 
-	isLocalEnvironment() {
-		return this.#environment.match(/wui/i);
+	isLocal() {
+		return this.#environment.match(/local/i);
+	}
+
+	isMobile() {
+		return navigator.userAgentData?.mobile || this.#systemName.match(/(Android|iOS|Windows Phone)/);
+	}
+
+	isTouch() {
+		return navigator.maxTouchPoints > 0;
+	}
+
+	isTablet() {
+		const userAgent = navigator.userAgent;
+		const width = window.innerWidth;
+		const isTabletUA = userAgent.match(/Tablet|iPad|Playbook|Silk/i);
+		const isTabletSize = width >= 768 && width <= 1280;
+		return isTabletUA || (this.isMobile() && this.isTouch() && isTabletSize);
 	}
 
 	isAppInForeground(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "isAppInForeground" }).then(done);
 		}
 		return null;
 	}
 
 	getDeviceInfo(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "getDeviceInfo" }).then(done);
 		}
 		return { platform: this.#systemName };
 	}
 
 	getDisplayInfo(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "getDisplayInfo" }).then(done);
 		}
 		return {
@@ -227,14 +243,14 @@ class WUIEnvironment {
 	}
 
 	getAppInfo(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "getAppInfo" }).then(done);
 		}
 		return null;
 	}
 
 	getPermissionsStatus(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "getPermissionsStatus" }).then(done);
 		} else if (navigator.permissions) {
 			const $this = this;
@@ -266,7 +282,7 @@ class WUIEnvironment {
 	}
 
 	getCurrentPosition(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "getCurrentPosition" }).then(done);
 		} else if (navigator.geolocation) {
 			return new Promise((resolve) => {
@@ -294,7 +310,7 @@ class WUIEnvironment {
 	}
 
 	getConnectionStatus(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "getConnectionStatus" }).then(done);
 		} else if (typeof (navigator.onLine) != "undefined") {
 			if (typeof (done) == "function") {
@@ -306,20 +322,20 @@ class WUIEnvironment {
 	}
 
 	setStatusbarStyle(color, darkIcons, done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			this.#request({ func: "setStatusbarStyle", color: color, darkIcons: darkIcons }).then(done);
 		}
 	}
 
 	setNavigationbarStyle(color, darkIcons, done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			this.#request({ func: "setNavigationbarStyle", color: color, darkIcons: darkIcons }).then(done);
 		}
 	}
 
 	setAppBadge(number, done) {
 		const n = (typeof number === "number" && number > 0) ? Math.floor(number) : 0;
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "setAppBadge", number: n }).then(done);
 		} else if (n > 0 && typeof navigator.setAppBadge === "function") {
 			return navigator.setAppBadge(n).then(done);
@@ -333,7 +349,7 @@ class WUIEnvironment {
 		if (name.match(/\.json$/i) && typeof (content) == "object") {
 			content = JSON.stringify(content);
 		}
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "saveFile", name: name, content: content }).then(done);
 		} else if (this.#localStorage && window.localStorage) {
 			window.localStorage.setItem(name, content);
@@ -346,7 +362,7 @@ class WUIEnvironment {
 	}
 
 	readFile(name, done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "readFile", name: name }).then(done);
 		} else if (this.#localStorage && window.localStorage) {
 			let content = window.localStorage.getItem(name) || "";
@@ -366,7 +382,7 @@ class WUIEnvironment {
 	}
 
 	removeFile(name, done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "removeFile", name: name }).then(done);
 		} else if (window.localStorage) {
 			window.localStorage.removeItem(name);
@@ -379,13 +395,13 @@ class WUIEnvironment {
 	}
 
 	openAppSettings(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			this.#request({ func: "openAppSettings" }).then(done);
 		}
 	}
 
 	openURL(url) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			this.#request({ func: "openURL", url: url });
 		} else if (this.#systemName.match(/(Android|iOS)/)) {
 			const link = document.createElement("a");
@@ -400,20 +416,20 @@ class WUIEnvironment {
 	}
 
 	readDeepLink(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			return this.#request({ func: "readDeepLink" }).then(done);
 		}
 		return null;
 	}
 
 	clearDeepLink(done) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			this.#request({ func: "clearDeepLink" }).then(done);
 		}
 	}
 
 	log(message, force = false) {
-		if (this.isLocalEnvironment()) {
+		if (this.isLocal()) {
 			this.#request({ func: "log", message: String(message), force: Boolean(force) });
 		} else if (typeof console !== "undefined" && typeof console.log === "function") {
 			console.log(message);

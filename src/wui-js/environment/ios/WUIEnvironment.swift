@@ -182,6 +182,21 @@ class WUIEnvironment: NSObject {
 
     func requestPermission(type: String, completion: @escaping (Bool) -> Void) {
         switch type {
+            case "notifications":
+                UNUserNotificationCenter.current().getNotificationSettings { settings in
+                    switch settings.authorizationStatus {
+                        case .authorized, .provisional, .ephemeral:
+                            DispatchQueue.main.async { completion(true) }
+                        case .denied:
+                            DispatchQueue.main.async { completion(false) }
+                        case .notDetermined:
+                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                                DispatchQueue.main.async { completion(granted) }
+                            }
+                        @unknown default:
+                            DispatchQueue.main.async { completion(false) }
+                    }
+                }
             case "location":
                 let status = CLLocationManager().authorizationStatus
                 switch status {
@@ -197,21 +212,6 @@ class WUIEnvironment: NSObject {
                         manager.requestWhenInUseAuthorization()
                     @unknown default:
                         completion(false)
-                }
-            case "notifications":
-                UNUserNotificationCenter.current().getNotificationSettings { settings in
-                    switch settings.authorizationStatus {
-                        case .authorized, .provisional, .ephemeral:
-                            DispatchQueue.main.async { completion(true) }
-                        case .denied:
-                            DispatchQueue.main.async { completion(false) }
-                        case .notDetermined:
-                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                                DispatchQueue.main.async { completion(granted) }
-                            }
-                        @unknown default:
-                            DispatchQueue.main.async { completion(false) }
-                    }
                 }
             case "camera":
                 switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -336,12 +336,12 @@ class WUIEnvironment: NSObject {
 
     func getPermissionsStatus(completion: @escaping ([String: Any]) -> Void) {
         var permissions: [String: String] = [
-            "phone":         "undefined",
+            "notifications": "undefined",
             "location":      "undefined",
-            "storage":       "undefined",
-            "contacts":      "undefined",
             "camera":        "undefined",
-            "notifications": "undefined"
+            "contacts":      "undefined",
+			"phone":         "undefined",
+            "storage":       "undefined"
         ]
         switch CLLocationManager().authorizationStatus {
             case .authorizedAlways, .authorizedWhenInUse: permissions["location"] = "granted"

@@ -1,11 +1,11 @@
 > [!IMPORTANT]
-> The GitHub account `wuiproject` was migrated to `wui-js` to match the name with the NPM account.
+> The GitHub account `@wuiproject` was migrated to `@wui-js` to match the name with the NPM account.
 
 > [!WARNING]
 > This document is not yet finished and is in a preliminary version.
 
 > [!NOTE]
-> Para la versión en Español de este documento, consulte [LEEME.md](./LEEME.md).
+> Para la versión en Español de este documento, consulte [README-es.md](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/README-es.md).
 
 # wuijs-environment-lib
 
@@ -15,7 +15,7 @@
 
 **Library version**: `0.1.0`
 
-**Documentation version**: `0.1.0.20260418.3`
+**Documentation version**: `0.1.0.20260425.0`
 
 **License**: `Apache License 2.0`
 
@@ -106,16 +106,16 @@ wuijs-environment-lib/
             └── demo/
 ```
 
-| Path                                                              | Description |
-| ----------------------------------------------------------------- | ----------- |
-| [imgs](imgs/)                                                     | Images used in the documentation. |
-| [imgs/logo](imgs/logo/)                                           | Project logotype and isotype in SVG and PNG format. |
-| [src](src/)                                                       | Main sources for the latest version. |
-| [src/wui-js](src/wui-js)                                          | WUI/JS Project directory. |
-| [src/wui-js/environment/android](src/wui-js/environment/android/) | WUI/JS Environment library for Android. |
-| [src/wui-js/environment/ios](src/wui-js/environment/ios/)         | WUI/JS Environment library for iOS. |
-| [src/wui-js/environment/web](src/wui-js/environment/web/)         | WUI/JS Environment library for Web. |
-| [src/wui-js/environment/demo](src/wui-js/environment/demo/)       | Directory with the demo interface for Android and iOS environments. |
+| Path                                                                 | Description |
+| -------------------------------------------------------------------- | ----------- |
+| [imgs](../imgs/)                                                     | Images used in the documentation. |
+| [imgs/logo](../imgs/logo/)                                           | Project logotype and isotype in SVG and PNG format. |
+| [src](../src/)                                                       | Main sources for the latest version. |
+| [src/wui-js](../src/wui-js)                                          | WUI/JS Project directory. |
+| [src/wui-js/environment/android](../src/wui-js/environment/android/) | WUI/JS Environment library for Android. |
+| [src/wui-js/environment/ios](../src/wui-js/environment/ios/)         | WUI/JS Environment library for iOS. |
+| [src/wui-js/environment/web](../src/wui-js/environment/web/)         | WUI/JS Environment library for Web. |
+| [src/wui-js/environment/demo](../src/wui-js/environment/demo/)       | Directory with the demo interface for Android and iOS environments. |
 
 > [!NOTE]
 > The `wuijs-environment-lib` library operates jointly, meaning the **Android + Web** or **iOS + Web** combination must be implemented for it to work correctly.
@@ -572,22 +572,28 @@ git clone https://github.com/wui-js/wuijs-environment-lib.git
 
 <a name="ios-config-permissions"></a>
 
-#### 2. Permissions Configuration (`Info.plist`)
+#### 2. Permissions Configuration (`Info.plist` or `project.pbxproj`)
 
 If the project uses `GENERATE_INFOPLIST_FILE = YES` (Xcode 13+), add the required usage description keys directly to the target's build settings:
 
 | Build Setting Key                                   | Required for |
 | --------------------------------------------------- | ------------ |
-| `INFOPLIST_KEY_NSLocationWhenInUseUsageDescription` | `getCurrentPosition()` |
-| `INFOPLIST_KEY_NSCameraUsageDescription`            | `getPermissionsStatus()` (camera) |
-| `INFOPLIST_KEY_NSContactsUsageDescription`          | `getPermissionsStatus()` (contacts) |
+| `INFOPLIST_KEY_NSUserNotificationsUsageDescription` | `requestPermission()` and `setAppBadge()` (notifications) |
+| `INFOPLIST_KEY_NSLocationWhenInUseUsageDescription` | `requestPermission()`, `getCurrentPosition()` and `getPermissionsStatus()` (location) |
+| `INFOPLIST_KEY_NSCameraUsageDescription`            | `requestPermission()` and `getPermissionsStatus()` (camera) |
+| `INFOPLIST_KEY_NSContactsUsageDescription`          | `requestPermission()` and `getPermissionsStatus()` (contacts) |
 
 > [!WARNING]
 > Without `NSLocationWhenInUseUsageDescription`, iOS silently ignores `requestWhenInUseAuthorization()` — the permission dialog never appears and `getCurrentPosition` never delivers a result.
 
+> [!NOTE]
+> If the keys are omitted in `project.pbxproj`, Xcode will read them from the `Info.plist` file.
+
 If the project uses a manual `Info.plist`, add the keys directly to that file:
 
 ```xml
+<key>NSUserNotificationsUsageDescription</key>
+<string>Required to send notifications.</string>
 <key>NSLocationWhenInUseUsageDescription</key>
 <string>Required to obtain the device's current position.</string>
 <key>NSCameraUsageDescription</key>
@@ -595,6 +601,10 @@ If the project uses a manual `Info.plist`, add the keys directly to that file:
 <key>NSContactsUsageDescription</key>
 <string>Required to check contacts permission status.</string>
 ```
+
+> [!NOTE]
+> **Selectively disabling contacts permission (iOS):** If the host app does not require contacts access, you can suppress the permission request by commenting out the three contacts-related blocks in `WUIEnvironment.swift`: the `import Contacts` statement, the `"contacts"` case inside the request dispatcher, and the `CNContactStore.authorizationStatus` call inside `getPermissionsStatus`.
+> Remove `NSContactsUsageDescription` from `Info.plist` as well. iOS will not prompt the user for contacts in that case. See `app.agromapp.monitor.ios` as a reference implementation.
 
 <a name="ios-config-colors"></a>
 
@@ -715,17 +725,29 @@ class EnvironmentViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         wuiEnvironment = WUIEnvironment(viewController: self)
-        // Load demo page (comment out the following line after validating the test)
+        
+		// Load page
+		// comment out the following line after validating the test
         wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/libraries/wui-js/environment/demo/index.html").absoluteString)
-        // Load start page (uncomment the following line after validating the test)
+        // uncomment the following line after validating the test
         // wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/pages/index.html").absoluteString)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
+        
+        // Request basic permissions
+        
+        wuiEnvironment?.requestPermission(type: "notifications") { granted in }
+        wuiEnvironment?.requestPermission(type: "location") { granted in }
+        //wuiEnvironment?.requestPermission(type: "camera") { granted in }
+
+		// Add deep link listener
+		NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
     }
 
     deinit {
+        // Remove deep link listener
         NotificationCenter.default.removeObserver(self, name: .wuiDeepLink, object: nil)
     }
 
+    // Forward deep link
     @objc private func handleDeepLink(_ notification: Notification) {
         wuiEnvironment?.saveDeepLink(url: notification.object as? URL)
     }
@@ -775,7 +797,7 @@ Public fields and getter/setter properties of the `WUIEnvironment` instance.
 | `userAgent`         | `string`         | `navigator.userAgent`                                     | (get)<br><br>Raw user agent string. Resolved at construction time. |
 | `platform`          | `string`         | `navigator.userAgentData?.platform \| navigator.platform` | (get)<br><br>Platform string from the browser or OS. Resolved at construction time. |
 | `systemName`        | `string`         | `""`                                                      | (get)<br><br>Normalized OS name derived from `platform`: `"iOS"`, `"Android"`, `"macOS"`, `"Linux"`, `"Windows Phone"`, `"Windows"`, or `""`. Resolved at construction time. |
-| `environment`       | `string`         | `"web"`                                                   | (get)<br><br>Runtime environment identifier: `"wui.android"` when running in an Android WebView, `"wui.ios"` when running in an iOS WKWebView, or `"web"` otherwise. Resolved at construction time. |
+| `environment`       | `string`         | `"web"`                                                   | (get)<br><br>Runtime environment identifier: `"local.android"` when running in an Android WebView, `"local.ios"` when running in an iOS WKWebView, or `"web"` otherwise. Resolved at construction time. |
 | `localStorage`      | `boolean`        | `true`                                                    | (get/set)<br><br>When `true`, `saveFile`, `readFile`, and `removeFile` use `window.localStorage` as fallback on web. Has no effect inside a native WebView. |
 | `onReady`           | `function\|null` | `null`                                                    | (get/set)<br><br>Callback fired once all pending bridge requests have resolved. Receives the total request count as argument. If assigned after all requests are already resolved, fires immediately. |
 | `onDownloadFile`    | `function\|null` | `null`                                                    | (get/set)<br><br>Callback fired when a file download initiated from the WebView completes. Receives `{ filename, mimetype, uri }`. Must be assigned before loading the first page. |
@@ -799,7 +821,10 @@ Static members of the `WUIEnvironment` class.
 | Method                  | Return type               | Description |
 | ----------------------- | ------------------------- | ----------- |
 | `requestPermission`     | `Promise<boolean>`        | `requestPermission(type[, done])`<br><br>Arguments:<br>**• type:** `string`, one of `location`, `notifications`, `camera`, `contacts`, `storage`.<br>**• done:** `function` *optional*, callback.<br><br>Requests the system permission for the given type. Inside a native WebView delegates to the bridge (`requestPermission`). On web falls back to `navigator.permissions.query`. Resolves with `true` when granted. |
-| `isLocalEnvironment`    | `boolean`                 | `isLocalEnvironment()`<br><br>Returns `true` when running inside a native WebView (`wui.android` or `wui.ios`). Returns `null` on web. Resolved synchronously at call time from the value set at construction. |
+| `isLocal`               | `boolean`                 | `isLocal()`<br><br>Returns `true` when running inside a native WebView (`local.android` or `local.ios`). Returns `null` on web. Resolved synchronously at call time from the value set at construction. |
+| `isMobile`              | `boolean`                 | `isMobileEnvironment()`<br><br>Returns `true` when running on a mobile device (Android, iOS or Windows Phone). Returns `false` on web. Resolved synchronously at call time from the value set at construction. |
+| `isTouch`               | `boolean`                 | `isTouch()`<br><br>Returns `true` when running on a device with a touch screen. Returns `false` on web. Resolved synchronously at call time from the value set at construction. |
+| `isTablet`              | `boolean`                 | `isTablet()`<br><br>Returns `true` when running on a tablet device (Android, iOS or Windows Phone). Returns `false` on web. Resolved synchronously at call time from the value set at construction. |
 | `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Checks whether the application is in the foreground. Returns `null` on web. |
 | `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets hardware information (UUID, model, platform, etc.). On web returns `{ platform: systemName }`. |
 | `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets screen metrics and navigation mode. On web returns `{ width, height, notch: false }`. |

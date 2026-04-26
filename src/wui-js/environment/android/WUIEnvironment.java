@@ -89,7 +89,7 @@ public class WUIEnvironment {
     private final Map<Integer, Consumer<Boolean>> permissionCallbacks = new HashMap<>();
     private final AtomicInteger permissionRequestCodeCounter = new AtomicInteger(1000);
 
-    // ---- Initialization ----
+    // Initialization
 
     public WUIEnvironment(Context context, boolean developMode) throws JSONException {
         this.context = context;
@@ -354,14 +354,11 @@ public class WUIEnvironment {
         });
     }
 
-    // ---- Native bridge functions ----
+    // Native bridge functions
 
     public void requestPermission(String type, Consumer<Boolean> callback) {
         String[] perms;
         switch (type) {
-            case "location":
-                perms = new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION };
-                break;
             case "notifications":
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     perms = new String[]{ Manifest.permission.POST_NOTIFICATIONS };
@@ -369,6 +366,9 @@ public class WUIEnvironment {
                     callback.accept(true);
                     return;
                 }
+                break;
+            case "location":
+                perms = new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION };
                 break;
             case "camera":
                 perms = new String[]{ Manifest.permission.CAMERA };
@@ -579,16 +579,16 @@ public class WUIEnvironment {
         JSONObject permissions = new JSONObject();
         JSONObject manifestPermissions = new JSONObject();
         try {
-            manifestPermissions.put("phone", Manifest.permission.READ_PHONE_STATE);
-            manifestPermissions.put("location", Manifest.permission.ACCESS_FINE_LOCATION);
-            manifestPermissions.put("location.2", Manifest.permission.ACCESS_COARSE_LOCATION);
-            manifestPermissions.put("storage", Manifest.permission.READ_EXTERNAL_STORAGE);
-            manifestPermissions.put("storage.2", Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            manifestPermissions.put("contacts", Manifest.permission.READ_CONTACTS);
-            manifestPermissions.put("camera", Manifest.permission.CAMERA);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 manifestPermissions.put("notifications", Manifest.permission.POST_NOTIFICATIONS);
             }
+            manifestPermissions.put("location", Manifest.permission.ACCESS_FINE_LOCATION);
+            manifestPermissions.put("location.2", Manifest.permission.ACCESS_COARSE_LOCATION);
+            manifestPermissions.put("camera", Manifest.permission.CAMERA);
+            manifestPermissions.put("contacts", Manifest.permission.READ_CONTACTS);
+            manifestPermissions.put("phone", Manifest.permission.READ_PHONE_STATE);
+            manifestPermissions.put("storage", Manifest.permission.READ_EXTERNAL_STORAGE);
+            manifestPermissions.put("storage.2", Manifest.permission.WRITE_EXTERNAL_STORAGE);
             manifestPermissions.keys().forEachRemaining(key -> {
                 if (!key.contains(".")) {
                     try {
@@ -949,7 +949,7 @@ public class WUIEnvironment {
         log("i", "[js] " + message, force);
     }
 
-    // ---- Internal helpers ----
+    // Internal helpers
 
     private boolean requestPermissionSync(String type) {
         final boolean[] result = new boolean[]{ false };
