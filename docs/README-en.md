@@ -13,9 +13,9 @@
 	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
-**Library version**: `0.1.0` ([Change Log](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-en.md))
+**Library version**: `0.2.0` ([Change Log](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-en.md))
 
-**Documentation version**: `0.1.0.20260425.0`
+**Documentation version**: `0.2.0.20260426.0`
 
 **License**: `Apache License 2.0`
 
@@ -98,13 +98,16 @@ wuijs-environment-lib/
 ├── docs/
 ├── imgs/
 │   └── logo/
+├── legacy/
+│   └── wui-js/
+│       └── environment/
 └── src/
-    └── wui-js/
-        └── environment/
-            ├── android/
-            ├── ios/
-            ├── web/
-            └── demo/
+	└── wui-js/
+		└── environment/
+			├── android/
+			├── ios/
+			├── web/
+			└── demo/
 ```
 
 | Path                                                                                                                        | Description |
@@ -112,6 +115,9 @@ wuijs-environment-lib/
 | [docs](https://github.com/wui-js/wuijs-environment-lib/tree/main/docs/)                                                     | Documentation. |
 | [imgs](https://github.com/wui-js/wuijs-environment-lib/tree/main/imgs/)                                                     | Images used in the documentation. |
 | [imgs/logo](https://github.com/wui-js/wuijs-environment-lib/tree/main/imgs/logo/)                                           | Project logotype and isotype in SVG and PNG format. |
+| [legacy](https://github.com/wui-js/wuijs-environment-lib/tree/main/legacy/)                                                 | Deprecated sources with previous versions. |
+| [legacy/wui-js](https://github.com/wui-js/wuijs-environment-lib/tree/main/legacy/wui-js/)                                   | WUI/JS Project directory. |
+| [legacy/wui-js/environment](https://github.com/wui-js/wuijs-environment-lib/tree/main/legacy/wui-js/environment/)           | WUI/JS Environment library (previous versions). |
 | [src](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/)                                                       | Main sources for the latest version. |
 | [src/wui-js](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/wui-js)                                          | WUI/JS Project directory. |
 | [src/wui-js/environment/android](https://github.com/wui-js/wuijs-environment-lib/tree/main/src/wui-js/environment/android/) | WUI/JS Environment library for Android. |
@@ -121,6 +127,14 @@ wuijs-environment-lib/
 
 > [!NOTE]
 > The `wuijs-environment-lib` library operates jointly, meaning the **Android + Web** or **iOS + Web** combination must be implemented for it to work correctly.
+
+### Sources
+
+| Type  | Version | File |
+| ----- | ------- | ---- |
+| Java  | 0.2     | [src/wui-js/environment/android/WUIEnvironment.java](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/android/WUIEnvironment.java) |
+| Swift | 0.2     | [src/wui-js/environment/ios/WUIEnvironment.swift](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/ios/WUIEnvironment.swift) |
+| JS    | 0.2     | [src/wui-js/environment/web/wui-environment-0.2.js](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/web/wui-environment-0.2.js) |
 
 <a name="quickstart"></a>
 
@@ -150,10 +164,10 @@ wuiEnvironment.saveDeepLink(getIntent());
 ```html
 <script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
 <script>
-    const env = new WUIEnvironment();
-    env.getDeviceInfo(function(info) {
-        console.log("Platform:", info.platform, "| Model:", info.model);
-    });
+	const env = new WUIEnvironment();
+	env.getDeviceInfo(function(info) {
+		console.log("Platform:", info.platform, "| Model:", info.model);
+	});
 </script>
 ```
 
@@ -178,10 +192,10 @@ wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("asset
 ```html
 <script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
 <script>
-    const env = new WUIEnvironment();
-    env.getDeviceInfo(function(info) {
-        console.log("Platform:", info.platform, "| Model:", info.model);
-    });
+	const env = new WUIEnvironment();
+	env.getDeviceInfo(function(info) {
+		console.log("Platform:", info.platform, "| Model:", info.model);
+	});
 </script>
 ```
 
@@ -211,7 +225,7 @@ The Android implementation uses WebView as its rendering engine.
 | `requestPermission`     | `void`       | `requestPermission(type, callback)`<br><br>Arguments:<br>**• type:** `String`, one of `location`, `notifications`, `camera`, `contacts`, `storage`.<br>**• callback:** `Consumer<Boolean>`, invoked with the result.<br><br>Requests the system permission for the given type. If already granted, invokes the callback immediately. If permanently denied (`don't ask again`), returns `false` without showing the dialog. On Android < 13, `notifications` always resolves to `true`. Delegates the OS callback through `MainActivity.onRequestPermissionsResult` → `handlePermissionResult(...)`. |
 | `isAppInForeground`     | `boolean`    | `isAppInForeground()`<br><br>Checks whether the application is currently in the foreground. |
 | `getDeviceInfo`         | `JSONObject` | `getDeviceInfo()`<br><br>Returns device hardware information: `id`, `uuid`, `name`, `platform`, `version`, `maker`, `model`. |
-| `getDisplayInfo`        | `JSONObject` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, and system bar style flags. |
+| `getDisplayInfo`        | `JSONObject` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, system bar style flags, `statusbarOverlay` (`true` when content renders behind the status bar — detected via `FLAG_TRANSLUCENT_STATUS`, `FLAG_LAYOUT_NO_LIMITS`, or a status bar color with alpha < 255), and `navigationbarOverlay` (`true` when content renders behind the navigation bar — detected via `FLAG_TRANSLUCENT_NAVIGATION`, `FLAG_LAYOUT_NO_LIMITS`, or a navigation bar color with alpha < 255). |
 | `getAppInfo`            | `JSONObject` | `getAppInfo()`<br><br>Returns application metadata: `name`, `version`, `package`, `build`. |
 | `getPermissionsStatus`  | `JSONObject` | `getPermissionsStatus()`<br><br>Checks the status of system permissions: `phone`, `location`, `storage`, `contacts`, `camera`, `notifications`. Possible values: `granted`, `denied`, `default`. |
 | `getCurrentPosition`    | `JSONObject` | `getCurrentPosition()`<br><br>Obtains current GPS/Network coordinates: `latitude`, `longitude`, `accuracy`, `provider`, `timestamp`. Requests location permission if not yet granted. |
@@ -281,11 +295,11 @@ Ensure the repositories are correctly defined:
 
 ```kotlin
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
+	repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+	repositories {
+		google()
+		mavenCentral()
+	}
 }
 ```
 
@@ -297,9 +311,9 @@ Ensure `buildConfig` is enabled with the value `true`:
 
 ```kotlin
 android {
-    buildFeatures {
-        buildConfig = true
-    }
+	buildFeatures {
+		buildConfig = true
+	}
 }
 ```
 
@@ -307,7 +321,7 @@ Add the `ShortcutBadger` dependency required by the OEM branch of `setAppBadge`:
 
 ```kotlin
 dependencies {
-    implementation("me.leolin:ShortcutBadger:1.1.22@aar")
+	implementation("me.leolin:ShortcutBadger:1.1.22@aar")
 }
 ```
 
@@ -342,10 +356,10 @@ To enable Deep Link in the application, add the following statement to the `appl
 
 ```xml
 <intent-filter>
-    <action android:name="android.intent.action.VIEW" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="app_scheme" />
+	<action android:name="android.intent.action.VIEW" />
+	<category android:name="android.intent.category.DEFAULT" />
+	<category android:name="android.intent.category.BROWSABLE" />
+	<data android:scheme="app_scheme" />
 </intent-filter>
 ```
 
@@ -359,13 +373,13 @@ To enable file sharing in the application, add the following statement to the `a
 
 ```xml
 <provider
-    android:name="androidx.core.content.FileProvider"
-    android:authorities="${applicationId}.provider"
-    android:exported="false"
-    android:grantUriPermissions="true">
-    <meta-data
-        android:name="android.support.FILE_PROVIDER_PATHS"
-        android:resource="@xml/file_paths" />
+	android:name="androidx.core.content.FileProvider"
+	android:authorities="${applicationId}.provider"
+	android:exported="false"
+	android:grantUriPermissions="true">
+	<meta-data
+		android:name="android.support.FILE_PROVIDER_PATHS"
+		android:resource="@xml/file_paths" />
 </provider>
 ```
 
@@ -380,16 +394,16 @@ The library uses these keys for the status and navigation bar styles:
 
 ```xml
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="statusbarLightColor">#f5f5f5</color>
-    <color name="statusbarLightOverlayColor">#c2c2c2</color>
-    <color name="statusbarDarkColor">#212121</color>
-    <color name="statusbarDarkOverlayColor">#616161</color>
-    <color name="navigationbarLightColor">#efeff6</color>
-    <color name="navigationbarLightOverlayColor">#c0c0c6</color>
-    <color name="navigationbarDarkColor">#212121</color>
-    <color name="navigationbarDarkOverlayColor">#616161</color>
+	<color name="black">#FF000000</color>
+	<color name="white">#FFFFFFFF</color>
+	<color name="statusbarLightColor">#f5f5f5</color>
+	<color name="statusbarLightOverlayColor">#c2c2c2</color>
+	<color name="statusbarDarkColor">#212121</color>
+	<color name="statusbarDarkOverlayColor">#616161</color>
+	<color name="navigationbarLightColor">#efeff6</color>
+	<color name="navigationbarLightOverlayColor">#c0c0c6</color>
+	<color name="navigationbarDarkColor">#212121</color>
+	<color name="navigationbarDarkOverlayColor">#616161</color>
 </resources>
 ```
 
@@ -443,44 +457,51 @@ public class MainActivity extends AppCompatActivity {
 
 	private WUIEnvironment wuiEnvironment;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        try {
-            wuiEnvironment = new WUIEnvironment(this);
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		try {
+			wuiEnvironment = new WUIEnvironment(this);
 
 			// Load demo page (comment out the following line after validating the test)
-            wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
-            // Load start page (uncomment the following line after validating the test)
+			wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
+			// Load start page (uncomment the following line after validating the test)
 			//wuiEnvironment.openURL("file:///android_asset/pages/index.html");
 
+			// Request basic permissions
+			wuiEnvironment.requestPermission("notifications", null);
+			wuiEnvironment.requestPermission("location", null);
+			//wuiEnvironment.requestPermission("camera", null);
+
 			// Enable Deep Link requests when the app opens
-            wuiEnvironment.saveDeepLink(getIntent());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
+			wuiEnvironment.saveDeepLink(getIntent());
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        setIntent(intent);
-        try {
-            // Enable Deep Link requests while the app is running
-            wuiEnvironment.saveDeepLink(intent);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
+	@Override
+	protected void onNewIntent(Intent intent) {
+		super.onNewIntent(intent);
+		setIntent(intent);
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        // Required by requestPermission — forwards the OS callback to the bridge
-        if (wuiEnvironment != null) {
-            wuiEnvironment.handlePermissionResult(requestCode, permissions, grantResults);
-        }
-    }
+		// Enable Deep Link requests while the app is running
+		try {
+			wuiEnvironment.saveDeepLink(intent);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+		// Required by requestPermission — forwards the OS callback to the bridge
+		if (wuiEnvironment != null) {
+			wuiEnvironment.handlePermissionResult(requestCode, permissions, grantResults);
+		}
+	}
 }
 ```
 
@@ -513,7 +534,7 @@ The iOS implementation uses WebKit (WKWebView) as its rendering engine and commu
 | `requestPermission`     | `void`          | `requestPermission(type, completion)`<br><br>Arguments:<br>**• type:** `String`, one of `location`, `notifications`, `camera`, `contacts`.<br>**• completion:** `(Bool) -> Void`, invoked with the result.<br><br>Requests the system permission for the given type. If already granted, invokes the completion immediately. If denied or restricted, returns `false`. For `location`, uses `CLLocationManager.requestWhenInUseAuthorization`; for `notifications`, `UNUserNotificationCenter.requestAuthorization`; for `camera`, `AVCaptureDevice.requestAccess`; for `contacts`, `CNContactStore.requestAccess`. |
 | `isAppInForeground`     | `Bool`          | `isAppInForeground()`<br><br>Checks whether the application is currently in the foreground. |
 | `getDeviceInfo`         | `[String: Any]` | `getDeviceInfo()`<br><br>Returns device hardware information: `id`, `uuid`, `name`, `platform`, `version`, `maker`, `model`. |
-| `getDisplayInfo`        | `[String: Any]` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, and system bar style flags.<br><br>`statusbarTransparent` and `navigationbarTransparent` reflect the current state of the UIView overlays managed by `setStatusbarStyle` and `setNavigationbarStyle`: `true` when no opaque overlay is placed over that area. `navigationbarLightMode` is always `false` (the iOS home indicator adapts automatically). |
+| `getDisplayInfo`        | `[String: Any]` | `getDisplayInfo()`<br><br>Returns screen metrics: `width`, `height`, `density`, `densityDpi`, `orientation`, `refreshRate`, `aspectRatio`, `navigationMode`, `statusbarHeight`, `navigationbarHeight`, `notch`, and system bar style flags.<br><br>`statusbarTransparent` and `navigationbarTransparent` reflect the current state of the UIView overlays managed by `setStatusbarStyle` and `setNavigationbarStyle`: `true` when no opaque overlay is placed over that area. `statusbarOverlay` is `true` when content renders behind the status bar — derived from `statusbarTransparent` or when `safeAreaInsets.top` is zero. `navigationbarOverlay` is `true` when content renders behind the navigation bar — derived from `navigationbarTransparent` or when `safeAreaInsets.bottom` is zero (devices with home button or landscape without gesture bar). `navigationbarLightMode` is always `false` (the iOS home indicator adapts automatically). |
 | `getAppInfo`            | `[String: Any]` | `getAppInfo()`<br><br>Returns application metadata: `name`, `version`, `package`, `build`. |
 | `getPermissionsStatus`  | `void`          | `getPermissionsStatus(completion)`<br><br>Arguments:<br>**• completion:** `([String: Any]) -> Void`, callback with the result.<br><br>Checks the status of system permissions: `location`, `camera`, `contacts`, `notifications`. Possible values: `granted`, `denied`, `default`, `undefined`. The `phone` and `storage` keys are always `undefined` (no equivalent system permission in iOS). Async — delivers the result on the main thread. |
 | `getCurrentPosition`    | `void`          | `getCurrentPosition(completion)`<br><br>Arguments:<br>**• completion:** `([String: Any]) -> Void`, callback with the result.<br><br>Obtains current GPS coordinates: `latitude`, `longitude`, `accuracy`, `provider`, `timestamp`. Requests location permission if not yet granted. Async — delivers the result via `CLLocationManagerDelegate`.<br><br>> **Requires** `NSLocationWhenInUseUsageDescription` in `Info.plist`. Without it, iOS silently ignores the permission request. |
@@ -666,19 +687,19 @@ Use `.onOpenURL` to intercept Deep Link URLs and forward them to the bridge via 
 import SwiftUI
 
 extension Notification.Name {
-    static let wuiDeepLink = Notification.Name("WUIDeepLink")
+	static let wuiDeepLink = Notification.Name("WUIDeepLink")
 }
 
 @main
 struct packageApp: App {
-    var body: some Scene {
-        WindowGroup {
-            MainView()
-                .onOpenURL { url in
-                    NotificationCenter.default.post(name: .wuiDeepLink, object: url)
-                }
-        }
-    }
+	var body: some Scene {
+		WindowGroup {
+			MainView()
+				.onOpenURL { url in
+					NotificationCenter.default.post(name: .wuiDeepLink, object: url)
+				}
+		}
+	}
 }
 ```
 
@@ -694,65 +715,66 @@ import UIKit
 import WebKit
 
 extension Notification.Name {
-    static let wuiDeepLink = Notification.Name("WUIDeepLink")
+	static let wuiDeepLink = Notification.Name("WUIDeepLink")
 }
 
 struct MainView: View {
-    var body: some View {
-        EnvironmentView().ignoresSafeArea().onOpenURL { url in
+	var body: some View {
+		EnvironmentView().ignoresSafeArea().onOpenURL { url in
 			// Forward Deep Link URLs to WUIEnvironment via NotificationCenter.
 			// .onOpenURL handles both app-launch and in-app URL delivery in SwiftUI.
 			NotificationCenter.default.post(name: .wuiDeepLink, object: url)
 		}
-    }
+	}
 }
 
 struct EnvironmentView: UIViewControllerRepresentable {
 
-    func makeUIViewController(context: Context) -> EnvironmentViewController {
-        EnvironmentViewController()
-    }
+	func makeUIViewController(context: Context) -> EnvironmentViewController {
+		EnvironmentViewController()
+	}
 
-    func updateUIViewController(_ uiViewController: EnvironmentViewController, context: Context) {}
+	func updateUIViewController(_ uiViewController: EnvironmentViewController, context: Context) {}
 }
 
 class EnvironmentViewController: UIViewController {
 
-    private var wuiEnvironment: WUIEnvironment?
+	private var wuiEnvironment: WUIEnvironment?
 
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        return wuiEnvironment?.preferredStatusBarStyle ?? .default
-    }
+	override var preferredStatusBarStyle: UIStatusBarStyle {
+		return wuiEnvironment?.preferredStatusBarStyle ?? .default
+	}
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        wuiEnvironment = WUIEnvironment(viewController: self)
-        
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		wuiEnvironment = WUIEnvironment(viewController: self)
+		
 		// Load page
 		// comment out the following line after validating the test
-        wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/libraries/wui-js/environment/demo/index.html").absoluteString)
-        // uncomment the following line after validating the test
-        // wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/pages/index.html").absoluteString)
-        
-        // Request basic permissions
-        
-        wuiEnvironment?.requestPermission(type: "notifications") { granted in }
-        wuiEnvironment?.requestPermission(type: "location") { granted in }
-        //wuiEnvironment?.requestPermission(type: "camera") { granted in }
+		wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/libraries/wui-js/environment/demo/index.html").absoluteString)
+		// uncomment the following line after validating the test
+		// wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/pages/index.html").absoluteString)
+		
+		// Request basic permissions
+		
+		wuiEnvironment?.requestPermission(type: "notifications") { granted in }
+		wuiEnvironment?.requestPermission(type: "location") { granted in }
+		//wuiEnvironment?.requestPermission(type: "camera") { granted in }
 
 		// Add deep link listener
 		NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
-    }
+	}
 
-    deinit {
-        // Remove deep link listener
-        NotificationCenter.default.removeObserver(self, name: .wuiDeepLink, object: nil)
-    }
+	deinit {
 
-    // Forward deep link
-    @objc private func handleDeepLink(_ notification: Notification) {
-        wuiEnvironment?.saveDeepLink(url: notification.object as? URL)
-    }
+		// Remove deep link listener
+		NotificationCenter.default.removeObserver(self, name: .wuiDeepLink, object: nil)
+	}
+
+	// Forward deep link
+	@objc private func handleDeepLink(_ notification: Notification) {
+		wuiEnvironment?.saveDeepLink(url: notification.object as? URL)
+	}
 }
 ```
 
@@ -766,15 +788,15 @@ The JavaScript class `WUIEnvironment` must be included in every HTML page that u
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+	<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
 </head>
 <body>
-    <script>
-        const env = new WUIEnvironment();
-        env.getDeviceInfo(function(info) {
-            console.log("Platform:", info.platform);
-        });
-    </script>
+	<script>
+		const env = new WUIEnvironment();
+		env.getDeviceInfo(function(info) {
+			console.log("Platform:", info.platform);
+		});
+	</script>
 </body>
 </html>
 ```
@@ -829,7 +851,7 @@ Static members of the `WUIEnvironment` class.
 | `isTablet`              | `boolean`                 | `isTablet()`<br><br>Returns `true` when running on a tablet device (Android, iOS or Windows Phone). Returns `false` on web. Resolved synchronously at call time from the value set at construction. |
 | `isAppInForeground`     | `Promise<boolean>`        | `isAppInForeground([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Checks whether the application is in the foreground. Returns `null` on web. |
 | `getDeviceInfo`         | `Promise<Object>`         | `getDeviceInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets hardware information (UUID, model, platform, etc.). On web returns `{ platform: systemName }`. |
-| `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets screen metrics and navigation mode. On web returns `{ width, height, notch: false }`. |
+| `getDisplayInfo`        | `Promise<Object>`         | `getDisplayInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets screen metrics and navigation mode. On web returns `{ width, height, notch: false ... }`. |
 | `getAppInfo`            | `Promise<Object>`         | `getAppInfo([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets application metadata. Returns `null` on web. |
 | `getPermissionsStatus`  | `Promise<Object>`         | `getPermissionsStatus([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Queries the status of system permissions. On web uses `navigator.permissions` when available. |
 | `getCurrentPosition`    | `Promise<Object>`         | `getCurrentPosition([done])`<br><br>Arguments:<br>**• done:** `function` *optional*, callback.<br><br>Gets the current GPS location. On web uses `navigator.geolocation`. |
@@ -850,39 +872,37 @@ Static members of the `WUIEnvironment` class.
 
 ### JavaScript Usage
 
-```javascript
+```js
 const env = new WUIEnvironment();
 
 // Configure event handlers before loading the first page
-
 env.onReady = function(count) {
-    console.log("All", count, "requests resolved");
+	console.log("All", count, "requests resolved");
 };
 env.onDownloadFile = function(args) {
-    console.log("Downloaded:", args.filename, args.mimetype, args.uri);
+	console.log("Downloaded:", args.filename, args.mimetype, args.uri);
 };
 env.onReceiveDeepLink = function(url) {
-    console.log("Deep Link received:", url);
+	console.log("Deep Link received:", url);
 };
 
 // Use onReady to wait for all initial requests to settle
-
 env.getDeviceInfo(function(info) {
-    console.log("Platform:", info.platform);
+	console.log("Platform:", info.platform);
 });
 env.getDisplayInfo(function(display) {
-    console.log("Notch:", display.notch);
-    console.log("Status bar height:", display.statusbarHeight);
+	console.log("Notch:", display.notch);
+	console.log("Status bar height:", display.statusbarHeight);
 });
 env.getConnectionStatus(function(connected) {
-    console.log("Connected:", connected);
+	console.log("Connected:", connected);
 });
 env.getCurrentPosition(function(position) {
-    if (position.error) {
-        console.error("Location error:", position.error);
-    } else {
-        console.log("Lat:", position.latitude, "Lon:", position.longitude);
-    }
+	if (position.error) {
+		console.error("Location error:", position.error);
+	} else {
+		console.log("Lat:", position.latitude, "Lon:", position.longitude);
+	}
 });
 ```
 

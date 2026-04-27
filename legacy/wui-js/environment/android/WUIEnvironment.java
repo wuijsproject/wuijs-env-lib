@@ -1,7 +1,7 @@
 /*
  * @file WUIEnvironment.java
  * @class WUIEnvironment
- * @version 0.2
+ * @version 0.1
  * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
  * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
  */
@@ -492,20 +492,14 @@ public class WUIEnvironment {
 			int height = context.getResources().getDisplayMetrics().heightPixels;
 			String orientation = context.getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ? "landscape" : "portrait";
 			float refreshRate = activity.getWindowManager().getDefaultDisplay().getRefreshRate();
-			boolean hasNotch = false;
+			String navigationMode = "unknown";
 			int statusbarHeight = 0;
 			int navigationbarHeight = 0;
-			String navigationMode = "unknown";
+			boolean hasNotch = false;
 			boolean statusbarTransparent = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS) != 0;
 			boolean statusbarLightMode = (decorView.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0;
-			boolean statusbarOverlay = statusbarTransparent
-					|| (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS) != 0
-					|| android.graphics.Color.alpha(window.getStatusBarColor()) < 255;
 			boolean navigationbarTransparent = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION) != 0;
 			boolean navigationbarLightMode = (decorView.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) != 0;
-			boolean navigationbarOverlay = navigationbarTransparent
-				|| (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS) != 0
-				|| android.graphics.Color.alpha(window.getNavigationBarColor()) < 255;
 			boolean systembarDrawsBackgrounds = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) != 0;
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 				android.view.WindowInsets insets = decorView.getRootWindowInsets();
@@ -542,16 +536,14 @@ public class WUIEnvironment {
 			displayInfo.put("orientation", orientation);
 			displayInfo.put("refreshRate", Math.round(refreshRate));
 			displayInfo.put("aspectRatio", (float) Math.max(width, height) / Math.min(width, height));
-			displayInfo.put("notch", hasNotch);
+			displayInfo.put("navigationMode", navigationMode);
 			displayInfo.put("statusbarHeight", (int) (statusbarHeight / density));
+			displayInfo.put("navigationbarHeight", (int) (navigationbarHeight / density));
+			displayInfo.put("notch", hasNotch);
 			displayInfo.put("statusbarTransparent", statusbarTransparent);
 			displayInfo.put("statusbarLightMode", statusbarLightMode);
-			displayInfo.put("statusbarOverlay", statusbarOverlay);
-			displayInfo.put("navigationMode", navigationMode);
-			displayInfo.put("navigationbarHeight", (int) (navigationbarHeight / density));
 			displayInfo.put("navigationbarTransparent", navigationbarTransparent);
 			displayInfo.put("navigationbarLightMode", navigationbarLightMode);
-			displayInfo.put("navigationbarOverlay", navigationbarOverlay);
 			displayInfo.put("systembarDrawsBackgrounds", systembarDrawsBackgrounds);
 
 		} catch (JSONException e) {
