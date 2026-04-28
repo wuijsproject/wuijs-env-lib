@@ -13,9 +13,9 @@
 	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
-**Versión librería**: `0.2.0` ([Registro de Cambios](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-es.md))
+**Versión librería**: `0.3.0` ([Registro de Cambios](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-es.md))
 
-**Versión documentación**: `0.2.0.20260426.0`
+**Versión documentación**: `0.3.0.20260428.0`
 
 **Licencia**: `Licencia Apache 2.0`
 
@@ -131,9 +131,9 @@ wuijs-environment-lib/
 ### Fuentes
 
 | Tipo  | Versión | Archivo |
-| ----- | ------- | ------- |
-| Java  | 0.2     | [src/wui-js/environment/android/WUIEnvironment.java](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/android/WUIEnvironment.java) |
-| Swift | 0.2     | [src/wui-js/environment/ios/WUIEnvironment.swift](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/ios/WUIEnvironment.swift) |
+| ----- | -------:| ------- |
+| Java  | 0.3     | [src/wui-js/environment/android/WUIEnvironment.java](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/android/WUIEnvironment.java) |
+| Swift | 0.3     | [src/wui-js/environment/ios/WUIEnvironment.swift](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/ios/WUIEnvironment.swift) |
 | JS    | 0.2     | [src/wui-js/environment/web/wui-environment-0.2.js](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/web/wui-environment-0.2.js) |
 
 <a name="quickstart"></a>
@@ -162,7 +162,7 @@ wuiEnvironment.saveDeepLink(getIntent());
 5. En las páginas HTML propias, incluir la clase JS e instanciarla:
 
 ```html
-<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script src="libraries/wui-js/environment/web/wui-environment-0.2.js"></script>
 <script>
 	const env = new WUIEnvironment();
 	env.getDeviceInfo(function(info) {
@@ -190,7 +190,7 @@ wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("asset
 5. En las páginas HTML propias, incluir la clase JS e instanciarla:
 
 ```html
-<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script src="libraries/wui-js/environment/web/wui-environment-0.2.js"></script>
 <script>
 	const env = new WUIEnvironment();
 	env.getDeviceInfo(function(info) {
@@ -429,11 +429,11 @@ package YOUR.PACKAGE.NAME; // Update this to match your project package
 
 <a name="android-config-wui-environment-js"></a>
 
-#### 7. Integración de la clase JavaScript `wui-environment-0.1.js`
+#### 7. Integración de la clase JavaScript `wui-environment-0.2.js`
 
 Copiar el contenido del directorio `src/wui-js/environment/web/` al directorio `assets/` del proyecto Android. Se recomienda la siguiente estructura:
 
-- `app/src/main/assets/libraries/wui-js/environment/web/wui-environment-0.1.js`
+- `app/src/main/assets/libraries/wui-js/environment/web/wui-environment-0.2.js`
 - `app/src/main/assets/libraries/wui-js/environment/demo/index.html`
 
 Lo anterior asegura que los ejemplos de inicialización funcionen correctamente.
@@ -463,17 +463,22 @@ public class MainActivity extends AppCompatActivity {
 		try {
 			wuiEnvironment = new WUIEnvironment(this);
 
-			// Carga página demo (comenta la siguiente línea después de validar la prueba)
-			wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
-			// Carga página inicial (descomenta la siguiente línea después de validar la prueba)
-			//wuiEnvironment.openURL("file:///android_asset/pages/index.html");
+			// Cargar página inicial
+
+			// comenta la siguiente línea después de validar la prueba
+            String path = "libraries/wui-js/environment/demo/index.html";
+			// descomenta la siguiente línea después de validar la prueba
+            //String path = "file:///android_asset/pages/index.html";
+            wuiEnvironment.openURL("file:///android_asset/" + path);
 
 			// Solicitar permisos básicos
+
 			wuiEnvironment.requestPermission("notifications", null);
 			wuiEnvironment.requestPermission("location", null);
 			//wuiEnvironment.requestPermission("camera", null);
 
 			// Habilitar peticiones Deep Link durante la apertura de la app
+
 			wuiEnvironment.saveDeepLink(getIntent());
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -486,6 +491,7 @@ public class MainActivity extends AppCompatActivity {
 		setIntent(intent);
 
 		// Habilitar peticiones Deep Link durante la ejecución de la app
+
 		try {
 			wuiEnvironment.saveDeepLink(intent);
 		} catch (JSONException e) {
@@ -497,11 +503,23 @@ public class MainActivity extends AppCompatActivity {
 	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-		// Requerido por requestPermission — reenvía el callback del OS al bridge
+		// Requerido por requestPermission() - reenvía el callback del OS al bridge
+
 		if (wuiEnvironment != null) {
 			wuiEnvironment.handlePermissionResult(requestCode, permissions, grantResults);
 		}
 	}
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Requerido por onShowFileChooser() - reenvía el resultado del selector de archivos al puente.
+
+        if (wuiEnvironment != null) {
+            wuiEnvironment.handleFileChooserResult(requestCode, resultCode, data);
+        }
+    }
 }
 ```
 
@@ -666,11 +684,11 @@ Copiar el archivo `src/wui-js/environment/ios/WUIEnvironment.swift` en el proyec
 
 <a name="ios-config-wui-environment-js"></a>
 
-#### 5. Integración de la clase JavaScript `wui-environment-0.1.js`
+#### 5. Integración de la clase JavaScript `wui-environment-0.2.js`
 
 Copiar el contenido del directorio `src/wui-js/environment/web/` al directorio `assets/` del proyecto en Xcode. Se recomienda la siguiente estructura:
 
-- `package/assets/libraries/wui-js/environment/web/wui-environment-0.1.js`
+- `package/assets/libraries/wui-js/environment/web/wui-environment-0.2.js`
 - `package/assets/libraries/wui-js/environment/demo/index.html`
 
 Lo anterior asegura que los ejemplos de inicialización funcionen correctamente.
@@ -748,28 +766,34 @@ class EnvironmentViewController: UIViewController {
 		super.viewDidLoad()
 		wuiEnvironment = WUIEnvironment(viewController: self)
 		
-		// Load page
+		// Cargar página inicial
+
 		// comenta la siguiente línea después de validar la prueba
-		wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/libraries/wui-js/environment/demo/index.html").absoluteString)
+		let path = "assets/libraries/wui-js/environment/demo/index.html"
 		// descomenta la siguiente línea después de validar la prueba
-		// wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/pages/index.html").absoluteString)
+		//let path = "assets/pages/index.html"
+		wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent(path).absoluteString)
 
 		// Solicitar permisos básicos
+
 		wuiEnvironment?.requestPermission(type: "notifications") { granted in }
 		wuiEnvironment?.requestPermission(type: "location") { granted in }
 		//wuiEnvironment?.requestPermission(type: "camera") { granted in }
 
-		// Add deep link listener
+		// Agregar el detector de deep link
+
 		NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
 	}
 
 	deinit {
 
-		// Remove deep link listener
+		// Eliminar el detector de deep link
+
 		NotificationCenter.default.removeObserver(self, name: .wuiDeepLink, object: nil)
 	}
 
-	// Forward deep link
+	// Reenviar deep link
+
 	@objc private func handleDeepLink(_ notification: Notification) {
 		wuiEnvironment?.saveDeepLink(url: notification.object as? URL)
 	}
@@ -780,13 +804,13 @@ class EnvironmentViewController: UIViewController {
 
 ## Implementación en Web
 
-La clase JavaScript `WUIEnvironment` debe ser incluida en cada página HTML que utilice el bridge. Copiar `wui-environment-0.1.js` a la carpeta de assets del proyecto y cargarlo con una etiqueta `<script>` antes de cualquier llamada al bridge:
+La clase JavaScript `WUIEnvironment` debe ser incluida en cada página HTML que utilice el bridge. Copiar `wui-environment-0.2.js` a la carpeta de assets del proyecto y cargarlo con una etiqueta `<script>` antes de cualquier llamada al bridge:
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-	<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+	<script src="libraries/wui-js/environment/web/wui-environment-0.2.js"></script>
 </head>
 <body>
 	<script>
@@ -800,7 +824,7 @@ La clase JavaScript `WUIEnvironment` debe ser incluida en cada página HTML que 
 ```
 
 > [!NOTE]
-> La ruta en `src` es relativa al archivo HTML. En Android, los assets se cargan desde `app/src/main/assets/`; en iOS, desde la carpeta `assets/` agregada al target de Xcode. La ruta recomendada `libraries/wui-js/environment/web/wui-environment-0.1.js` coincide con la estructura descrita en los pasos de instalación.
+> La ruta en `src` es relativa al archivo HTML. En Android, los assets se cargan desde `app/src/main/assets/`; en iOS, desde la carpeta `assets/` agregada al target de Xcode. La ruta recomendada `libraries/wui-js/environment/web/wui-environment-0.2.js` coincide con la estructura descrita en los pasos de instalación.
 
 **Comportamiento del bridge por plataforma:**
 - **Android**: las llamadas son **síncronas** — `Android.request()` devuelve el resultado inmediatamente.
@@ -873,6 +897,7 @@ Miembros estáticos de la clase `WUIEnvironment`.
 const env = new WUIEnvironment();
 
 // Configurar los handlers de eventos antes de cargar la primera página
+
 env.onReady = function(count) {
 	console.log("Todas las", count, "solicitudes resueltas");
 };
@@ -884,6 +909,7 @@ env.onReceiveDeepLink = function(url) {
 };
 
 // Usa onReady para esperar a que todas las solicitudes iniciales se resuelvan
+
 env.getDeviceInfo(function(info) {
 	console.log("Plataforma:", info.platform);
 });

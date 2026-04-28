@@ -1,7 +1,7 @@
 /*
  * @file WUIEnvironment.java
  * @class WUIEnvironment
- * @version 0.3
+ * @version 0.2
  * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
  * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
  */
@@ -30,9 +30,7 @@ import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.provider.Settings;
-import androidx.core.content.FileProvider;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -40,6 +38,7 @@ import android.view.WindowManager;
 import android.net.http.SslError;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
+import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
@@ -48,7 +47,6 @@ import android.webkit.URLUtil;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
-import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
@@ -66,9 +64,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -89,12 +85,9 @@ public class WUIEnvironment {
 	private String deepLinkURL = null;
 	private boolean pageLoaded = false;
 	private final String logTag = "WUIEnvironment";
+
 	private final Map<Integer, Consumer<Boolean>> permissionCallbacks = new HashMap<>();
 	private final AtomicInteger permissionRequestCodeCounter = new AtomicInteger(1000);
-	private ValueCallback<Uri[]> fileChooserCallback = null;
-	private Uri cameraOutputUri = null;
-	private static final int FILE_CHOOSER_REQUEST_CODE = 2000;
-	private static final int CAMERA_REQUEST_CODE = 2001;
 
 	// Initialization
 
@@ -114,7 +107,7 @@ public class WUIEnvironment {
 		if (context instanceof AppCompatActivity) {
 			activity = (AppCompatActivity) context;
 			activity.setContentView(webView);
-			setupWebViewSettings();
+			setupWebViewSettings(developMode);
 			setupWebViewClient(developMode);
 			setupBackPressHandler();
 			setupDownloadHandler();
@@ -122,7 +115,7 @@ public class WUIEnvironment {
 	}
 	
 	@SuppressLint("SetJavaScriptEnabled")
-	private void setupWebViewSettings() throws JSONException {
+	private void setupWebViewSettings(boolean developMode) throws JSONException {
 		JSONObject appInfo = getAppInfo();
 		WebSettings webSettings = webView.getSettings();
 		webSettings.setUserAgentString(webSettings.getUserAgentString()+" WUIEnvironment ("+appInfo.get("name")+"/"+appInfo.get("version")+")");
@@ -187,63 +180,6 @@ public class WUIEnvironment {
 					.setPositiveButton(android.R.string.ok, (d, w) -> result.confirm(input.getText().toString()))
 					.setNegativeButton(android.R.string.cancel, (d, w) -> result.cancel())
 					.setCancelable(false)
-					.show();
-				return true;
-			}
-			@Override
-			public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-				if (fileChooserCallback != null) {
-					fileChooserCallback.onReceiveValue(null);
-				}
-				fileChooserCallback = filePathCallback;
-				cameraOutputUri = null;
-				final Intent fileIntent = fileChooserParams.createIntent();
-				Intent cameraIntent = null;
-				try {
-					File cameraFile = File.createTempFile("wui_camera_", ".jpg", activity.getCacheDir());
-					cameraOutputUri = FileProvider.getUriForFile(activity, activity.getPackageName() + ".provider", cameraFile);
-					cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-					cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraOutputUri);
-					cameraIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-				} catch (Exception e) {
-					log("w", "Could not prepare camera intent: " + e.getMessage());
-				}
-				final Intent finalCameraIntent = cameraIntent;
-				new AlertDialog.Builder(activity)
-					.setItems(new CharSequence[]{ "Take photo", "Choose from gallery" }, (dialog, which) -> {
-						if (which == 0 && finalCameraIntent != null) {
-							requestPermission("camera", granted -> {
-								if (!granted) {
-									fileChooserCallback.onReceiveValue(null);
-									fileChooserCallback = null;
-									cameraOutputUri = null;
-									return;
-								}
-								try {
-									activity.startActivityForResult(finalCameraIntent, CAMERA_REQUEST_CODE);
-								} catch (Exception e) {
-									fileChooserCallback.onReceiveValue(null);
-									fileChooserCallback = null;
-									cameraOutputUri = null;
-									log("e", "Cannot open camera: " + e.getMessage());
-								}
-							});
-						} else {
-							try {
-								activity.startActivityForResult(fileIntent, FILE_CHOOSER_REQUEST_CODE);
-							} catch (Exception e) {
-								fileChooserCallback.onReceiveValue(null);
-								fileChooserCallback = null;
-								cameraOutputUri = null;
-								log("e", "Cannot open file chooser: " + e.getMessage());
-							}
-						}
-					})
-					.setOnCancelListener(dialog -> {
-						fileChooserCallback.onReceiveValue(null);
-						fileChooserCallback = null;
-						cameraOutputUri = null;
-					})
 					.show();
 				return true;
 			}
@@ -324,7 +260,10 @@ public class WUIEnvironment {
 	}
 
 	private void setupDownloadHandler() {
-		webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
+		webView.setDownloadListener(new DownloadListener() {
+
+			@Override
+			public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
 				String filename = "";
 				File downloadFile = null;
 				boolean downloaded = false;
@@ -334,8 +273,7 @@ public class WUIEnvironment {
 						String assetPath = url.replace("file:///android_asset/", "");
 						File sourceFile = new File(activity.getCacheDir(), assetPath);
 						if (!sourceFile.exists()) {
-							File sourceParent = sourceFile.getParentFile();
-							if (sourceParent != null) sourceParent.mkdirs();
+							sourceFile.getParentFile().mkdirs();
 							try (java.io.InputStream in = context.getAssets().open(assetPath);
 								 java.io.FileOutputStream out = new java.io.FileOutputStream(sourceFile)) {
 								byte[] buffer = new byte[1024];
@@ -347,8 +285,8 @@ public class WUIEnvironment {
 						}
 						if (sourceFile.exists()) {
 							File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-							if (!downloadsDir.exists() && !downloadsDir.mkdirs()) {
-								log("w", "Could not create downloads directory");
+							if (!downloadsDir.exists()) {
+								downloadsDir.mkdirs();
 							}
 							filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
 							downloadFile = new File(downloadsDir, filename);
@@ -373,6 +311,9 @@ public class WUIEnvironment {
 					} catch (Exception e) {
 						log("e", "Error downloading asset file: " + e.getMessage());
 					}
+				} else if (url.startsWith("data:")) {
+					// downloadFile = ...;
+					// downloaded = true;
 				} else {
 					filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
 					File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -408,6 +349,7 @@ public class WUIEnvironment {
 					} catch (JSONException e) {
 						throw new RuntimeException(e);
 					}
+				}
 			}
 		});
 	}
@@ -421,7 +363,7 @@ public class WUIEnvironment {
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 					perms = new String[]{ Manifest.permission.POST_NOTIFICATIONS };
 				} else {
-					if (callback != null) callback.accept(true);
+					callback.accept(true);
 					return;
 				}
 				break;
@@ -438,7 +380,7 @@ public class WUIEnvironment {
 				perms = new String[]{ Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE };
 				break;
 			default:
-				if (callback != null) callback.accept(false);
+				callback.accept(false);
 				return;
 		}
 		boolean allGranted = true;
@@ -446,7 +388,7 @@ public class WUIEnvironment {
 			if (ContextCompat.checkSelfPermission(activity, p) != PackageManager.PERMISSION_GRANTED) { allGranted = false; break; }
 		}
 		if (allGranted) {
-			if (callback != null) callback.accept(true);
+			callback.accept(true);
 			return;
 		}
 		// Permanent denial ("don't ask again") returns DENIED immediately via onRequestPermissionsResult,
@@ -457,7 +399,6 @@ public class WUIEnvironment {
 		activity.runOnUiThread(() -> ActivityCompat.requestPermissions(activity, permsFinal, requestCode));
 	}
 
-	@SuppressWarnings("unused")
 	public void handlePermissionResult(int requestCode, String[] permissions, int[] grantResults) {
 		Consumer<Boolean> callback = permissionCallbacks.remove(requestCode);
 		if (callback == null) return;
@@ -466,23 +407,6 @@ public class WUIEnvironment {
 			if (r == PackageManager.PERMISSION_GRANTED) { granted = true; break; }
 		}
 		callback.accept(granted);
-	}
-
-	public void handleFileChooserResult(int requestCode, int resultCode, Intent data) {
-		if (fileChooserCallback == null) return;
-		if (requestCode == CAMERA_REQUEST_CODE) {
-			Uri[] results = resultCode == android.app.Activity.RESULT_OK && cameraOutputUri != null
-				? new Uri[]{ cameraOutputUri } : null;
-			fileChooserCallback.onReceiveValue(results);
-			fileChooserCallback = null;
-			cameraOutputUri = null;
-		} else if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
-			Uri[] results = resultCode == android.app.Activity.RESULT_OK && data != null && data.getData() != null
-				? new Uri[]{ data.getData() } : null;
-			fileChooserCallback.onReceiveValue(results);
-			fileChooserCallback = null;
-			cameraOutputUri = null;
-		}
 	}
 
 	public boolean isAppInForeground() {
@@ -583,13 +507,15 @@ public class WUIEnvironment {
 				|| (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS) != 0
 				|| android.graphics.Color.alpha(window.getNavigationBarColor()) < 255;
 			boolean systembarDrawsBackgrounds = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) != 0;
-			android.view.WindowInsets insets = decorView.getRootWindowInsets();
-			if (insets != null) {
-				statusbarHeight = insets.getSystemWindowInsetTop();
-				navigationbarHeight = insets.getSystemWindowInsetBottom();
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-					android.view.DisplayCutout cutout = insets.getDisplayCutout();
-					hasNotch = cutout != null;
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+				android.view.WindowInsets insets = decorView.getRootWindowInsets();
+				if (insets != null) {
+					statusbarHeight = insets.getSystemWindowInsetTop();
+					navigationbarHeight = insets.getSystemWindowInsetBottom();
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+						android.view.DisplayCutout cutout = insets.getDisplayCutout();
+						hasNotch = cutout != null;
+					}
 				}
 			}
 			if (statusbarHeight == 0) {
@@ -695,7 +621,6 @@ public class WUIEnvironment {
 		return permissions;
 	}
 
-	@SuppressLint("MissingPermission")
 	public JSONObject getCurrentPosition() {
 		JSONObject position = new JSONObject();
 		try {
@@ -740,9 +665,12 @@ public class WUIEnvironment {
 							provider,
 							null,
 							activity.getMainExecutor(),
-							loc -> {
-								freshLocation[0] = loc;
-								latch.countDown();
+							new Consumer<Location>() {
+								@Override
+								public void accept(Location loc) {
+									freshLocation[0] = loc;
+									latch.countDown();
+								}
 							});
 					// Wait up to 5 seconds for a fresh location
 					if (latch.await(5, TimeUnit.SECONDS)) {
@@ -789,69 +717,77 @@ public class WUIEnvironment {
 	}
 
 	public void setStatusbarStyle(String color, boolean darkIcons) {
-		activity.runOnUiThread(() -> {
-			Window window = activity.getWindow();
-			int colorCode;
-			if (color.startsWith("#")) {
-				try {
-					colorCode = android.graphics.Color.parseColor(color);
-				} catch (IllegalArgumentException e) {
-					colorCode = ContextCompat.getColor(context, R.color.statusbarLightColor);
+		activity.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Window window = activity.getWindow();
+				int colorCode;
+				if (color.startsWith("#")) {
+					try {
+						colorCode = android.graphics.Color.parseColor(color);
+					} catch (IllegalArgumentException e) {
+						colorCode = ContextCompat.getColor(context, R.color.statusbarLightColor);
+					}
+				} else {
+					switch (color) {
+						case "statusbarLightColor": colorCode = ContextCompat.getColor(context, R.color.statusbarLightColor); break;
+						case "statusbarLightOverlayColor": colorCode = ContextCompat.getColor(context, R.color.statusbarLightOverlayColor); break;
+						case "statusbarDarkColor": colorCode = ContextCompat.getColor(context, R.color.statusbarDarkColor); break;
+						case "statusbarDarkOverlayColor": colorCode = ContextCompat.getColor(context, R.color.statusbarDarkOverlayColor); break;
+						default: colorCode = ContextCompat.getColor(context, R.color.statusbarLightColor); break;
+					}
 				}
-			} else {
-				switch (color) {
-					case "statusbarLightColor": colorCode = ContextCompat.getColor(context, R.color.statusbarLightColor); break;
-					case "statusbarLightOverlayColor": colorCode = ContextCompat.getColor(context, R.color.statusbarLightOverlayColor); break;
-					case "statusbarDarkColor": colorCode = ContextCompat.getColor(context, R.color.statusbarDarkColor); break;
-					case "statusbarDarkOverlayColor": colorCode = ContextCompat.getColor(context, R.color.statusbarDarkOverlayColor); break;
-					default: colorCode = ContextCompat.getColor(context, R.color.statusbarLightColor); break;
+				log("i", "Statusbar set color: " + color);
+				window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+				window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+				window.setStatusBarColor(colorCode);
+				View decor = window.getDecorView();
+				int flags = decor.getSystemUiVisibility();
+				if (darkIcons) {
+					flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+				} else {
+					flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
 				}
+				decor.setSystemUiVisibility(flags);
 			}
-			log("i", "Statusbar set color: " + color);
-			window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-			window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-			window.setStatusBarColor(colorCode);
-			View decor = window.getDecorView();
-			int flags = decor.getSystemUiVisibility();
-			if (darkIcons) {
-				flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-			} else {
-				flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-			}
-			decor.setSystemUiVisibility(flags);
 		});
 	}
 
 	public void setNavigationbarStyle(String color, boolean darkIcons) {
-		activity.runOnUiThread(() -> {
-			Window window = activity.getWindow();
-			int colorCode;
-			if (color.startsWith("#")) {
-				try {
-					colorCode = android.graphics.Color.parseColor(color);
-				} catch (IllegalArgumentException e) {
-					colorCode = ContextCompat.getColor(context, R.color.white);
+		activity.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Window window = activity.getWindow();
+				int colorCode;
+				if (color.startsWith("#")) {
+					try {
+						colorCode = android.graphics.Color.parseColor(color);
+					} catch (IllegalArgumentException e) {
+						colorCode = ContextCompat.getColor(context, R.color.white);
+					}
+				} else {
+					switch (color) {
+						case "navigationbarLightColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarLightColor); break;
+						case "navigationbarLightOverlayColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarLightOverlayColor); break;
+						case "navigationbarDarkColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarDarkColor); break;
+						case "navigationbarDarkOverlayColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarDarkOverlayColor); break;
+						default: colorCode = ContextCompat.getColor(context, R.color.white); break;
+					}
 				}
-			} else {
-				switch (color) {
-					case "navigationbarLightColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarLightColor); break;
-					case "navigationbarLightOverlayColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarLightOverlayColor); break;
-					case "navigationbarDarkColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarDarkColor); break;
-					case "navigationbarDarkOverlayColor": colorCode = ContextCompat.getColor(context, R.color.navigationbarDarkOverlayColor); break;
-					default: colorCode = ContextCompat.getColor(context, R.color.white); break;
+				log("i", "Navigationbar set color: " + color);
+				window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+				window.setNavigationBarColor(colorCode);
+				View decor = window.getDecorView();
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+					int flags = decor.getSystemUiVisibility();
+					if (darkIcons) {
+						flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+					} else {
+						flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+					}
+					decor.setSystemUiVisibility(flags);
 				}
 			}
-			log("i", "Navigationbar set color: " + color);
-			window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-			window.setNavigationBarColor(colorCode);
-			View decor = window.getDecorView();
-			int flags = decor.getSystemUiVisibility();
-			if (darkIcons) {
-				flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-			} else {
-				flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-			}
-			decor.setSystemUiVisibility(flags);
 		});
 	}
 
@@ -911,7 +847,7 @@ public class WUIEnvironment {
 
 	public boolean saveFile(String name, String content) {
 		try (FileOutputStream fileOutput = activity.openFileOutput(name, Context.MODE_PRIVATE)) {
-			fileOutput.write(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			fileOutput.write(content.getBytes("UTF-8"));
 			fileOutput.flush();
 			log("i", "File saved: " + name);
 			return true;
@@ -929,8 +865,8 @@ public class WUIEnvironment {
 			while ((len = fileInput.read(buffer)) != -1) {
 				baos.write(buffer, 0, len);
 			}
-			String result = baos.toString(java.nio.charset.StandardCharsets.UTF_8.name());
-			log("i", "File read: " + name);
+			String result = baos.toString("UTF-8");
+			log("i", "File readed: " + name);
 			return result;
 		} catch (IOException e) {
 			log("e", "Failed to read file: " + name + " - " + e.getMessage());
@@ -967,16 +903,19 @@ public class WUIEnvironment {
 				log("e", "Asset NOT found via AssetManager: " + assetPath);
 			}
 		}
-		activity.runOnUiThread(() -> {
-			if (url.startsWith("file://")) {
-				webView.loadUrl(url);
-			} else {
-				try {
-					Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-					intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-					activity.startActivity(intent);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
+		activity.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				if (url.startsWith("file://")) {
+					webView.loadUrl(url);
+				} else {
+					try {
+						Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+						activity.startActivity(intent);
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
 				}
 			}
 		});
@@ -1028,9 +967,7 @@ public class WUIEnvironment {
 			latch.countDown();
 		});
 		try {
-			if (!latch.await(60, TimeUnit.SECONDS)) {
-				log("w", "requestPermissionSync timed out for type: " + type);
-			}
+			latch.await(60, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}

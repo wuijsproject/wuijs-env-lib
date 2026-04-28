@@ -13,9 +13,9 @@
 	<img src="https://github.com/wui-js/wuijs-environment-lib/blob/main/imgs/logo/wuijs-environment-logotype-color.svg" width="220" height="220">
 </div>
 
-**Library version**: `0.2.0` ([Change Log](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-en.md))
+**Library version**: `0.3.0` ([Change Log](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-en.md))
 
-**Documentation version**: `0.2.0.20260426.0`
+**Documentation version**: `0.3.0.20260428.0`
 
 **License**: `Apache License 2.0`
 
@@ -131,9 +131,9 @@ wuijs-environment-lib/
 ### Sources
 
 | Type  | Version | File |
-| ----- | ------- | ---- |
-| Java  | 0.2     | [src/wui-js/environment/android/WUIEnvironment.java](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/android/WUIEnvironment.java) |
-| Swift | 0.2     | [src/wui-js/environment/ios/WUIEnvironment.swift](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/ios/WUIEnvironment.swift) |
+| ----- | -------:| ---- |
+| Java  | 0.3     | [src/wui-js/environment/android/WUIEnvironment.java](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/android/WUIEnvironment.java) |
+| Swift | 0.3     | [src/wui-js/environment/ios/WUIEnvironment.swift](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/ios/WUIEnvironment.swift) |
 | JS    | 0.2     | [src/wui-js/environment/web/wui-environment-0.2.js](https://github.com/wui-js/wuijs-environment-lib/blob/main/src/wui-js/environment/web/wui-environment-0.2.js) |
 
 <a name="quickstart"></a>
@@ -162,7 +162,7 @@ wuiEnvironment.saveDeepLink(getIntent());
 5. In your own HTML pages, include the JS class and instantiate it:
 
 ```html
-<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script src="libraries/wui-js/environment/web/wui-environment-0.2.js"></script>
 <script>
 	const env = new WUIEnvironment();
 	env.getDeviceInfo(function(info) {
@@ -190,7 +190,7 @@ wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("asset
 5. In your own HTML pages, include the JS class and instantiate it:
 
 ```html
-<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+<script src="libraries/wui-js/environment/web/wui-environment-0.2.js"></script>
 <script>
 	const env = new WUIEnvironment();
 	env.getDeviceInfo(function(info) {
@@ -429,11 +429,11 @@ package YOUR.PACKAGE.NAME; // Update this to match your project package
 
 <a name="android-config-wui-environment-js"></a>
 
-#### 7. JavaScript Class Integration `wui-environment-0.1.js`
+#### 7. JavaScript Class Integration `wui-environment-0.2.js`
 
 Copy the contents of the `src/wui-js/environment/web/` directory to the `assets/` directory of the Android project. The following structure is recommended:
 
-- `app/src/main/assets/libraries/wui-js/environment/web/wui-environment-0.1.js`
+- `app/src/main/assets/libraries/wui-js/environment/web/wui-environment-0.2.js`
 - `app/src/main/assets/libraries/wui-js/environment/demo/index.html`
 
 The above ensures that the initialization examples work correctly.
@@ -463,17 +463,22 @@ public class MainActivity extends AppCompatActivity {
 		try {
 			wuiEnvironment = new WUIEnvironment(this);
 
-			// Load demo page (comment out the following line after validating the test)
-			wuiEnvironment.openURL("file:///android_asset/libraries/wui-js/environment/demo/index.html");
-			// Load start page (uncomment the following line after validating the test)
-			//wuiEnvironment.openURL("file:///android_asset/pages/index.html");
+			// Load home page
+
+			// comment out the following line after validating the test
+            String path = "libraries/wui-js/environment/demo/index.html";
+			// uncomment the following line after validating the test
+            //String path = "file:///android_asset/pages/index.html";
+            wuiEnvironment.openURL("file:///android_asset/" + path);
 
 			// Request basic permissions
+
 			wuiEnvironment.requestPermission("notifications", null);
 			wuiEnvironment.requestPermission("location", null);
 			//wuiEnvironment.requestPermission("camera", null);
 
 			// Enable Deep Link requests when the app opens
+
 			wuiEnvironment.saveDeepLink(getIntent());
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -486,6 +491,7 @@ public class MainActivity extends AppCompatActivity {
 		setIntent(intent);
 
 		// Enable Deep Link requests while the app is running
+
 		try {
 			wuiEnvironment.saveDeepLink(intent);
 		} catch (JSONException e) {
@@ -497,11 +503,23 @@ public class MainActivity extends AppCompatActivity {
 	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-		// Required by requestPermission — forwards the OS callback to the bridge
+		// Required by requestPermission() - forwards the OS callback to the bridge
+
 		if (wuiEnvironment != null) {
 			wuiEnvironment.handlePermissionResult(requestCode, permissions, grantResults);
 		}
 	}
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Required by onShowFileChooser() - forwards the file picker result to the bridge
+
+        if (wuiEnvironment != null) {
+            wuiEnvironment.handleFileChooserResult(requestCode, resultCode, data);
+        }
+    }
 }
 ```
 
@@ -666,11 +684,11 @@ Copy the file `src/wui-js/environment/ios/WUIEnvironment.swift` into the Xcode p
 
 <a name="ios-config-wui-environment-js"></a>
 
-#### 5. JavaScript Class Integration `wui-environment-0.1.js`
+#### 5. JavaScript Class Integration `wui-environment-0.2.js`
 
 Copy the contents of the `src/wui-js/environment/web/` directory to the `assets/` directory of the Xcode project. The following structure is recommended:
 
-- `package/assets/libraries/wui-js/environment/web/wui-environment-0.1.js`
+- `package/assets/libraries/wui-js/environment/web/wui-environment-0.2.js`
 - `package/assets/libraries/wui-js/environment/demo/index.html`
 
 The above ensures that the initialization examples work correctly.
@@ -748,13 +766,15 @@ class EnvironmentViewController: UIViewController {
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		wuiEnvironment = WUIEnvironment(viewController: self)
-		
-		// Load page
+
+		// Load home page
+
 		// comment out the following line after validating the test
-		wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/libraries/wui-js/environment/demo/index.html").absoluteString)
+		let path = "assets/libraries/wui-js/environment/demo/index.html"
 		// uncomment the following line after validating the test
-		// wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent("assets/pages/index.html").absoluteString)
-		
+		//let path = "assets/pages/index.html"
+		wuiEnvironment?.openURL(url: Bundle.main.bundleURL.appendingPathComponent(path).absoluteString)
+
 		// Request basic permissions
 		
 		wuiEnvironment?.requestPermission(type: "notifications") { granted in }
@@ -762,16 +782,19 @@ class EnvironmentViewController: UIViewController {
 		//wuiEnvironment?.requestPermission(type: "camera") { granted in }
 
 		// Add deep link listener
+
 		NotificationCenter.default.addObserver(self, selector: #selector(handleDeepLink(_:)), name: .wuiDeepLink, object: nil)
 	}
 
 	deinit {
 
 		// Remove deep link listener
+
 		NotificationCenter.default.removeObserver(self, name: .wuiDeepLink, object: nil)
 	}
 
 	// Forward deep link
+
 	@objc private func handleDeepLink(_ notification: Notification) {
 		wuiEnvironment?.saveDeepLink(url: notification.object as? URL)
 	}
@@ -782,13 +805,13 @@ class EnvironmentViewController: UIViewController {
 
 ## Web Implementation
 
-The JavaScript class `WUIEnvironment` must be included in every HTML page that uses the bridge. Copy `wui-environment-0.1.js` to the project's assets folder and load it with a `<script>` tag before any bridge calls:
+The JavaScript class `WUIEnvironment` must be included in every HTML page that uses the bridge. Copy `wui-environment-0.2.js` to the project's assets folder and load it with a `<script>` tag before any bridge calls:
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-	<script src="libraries/wui-js/environment/web/wui-environment-0.1.js"></script>
+	<script src="libraries/wui-js/environment/web/wui-environment-0.2.js"></script>
 </head>
 <body>
 	<script>
@@ -802,7 +825,7 @@ The JavaScript class `WUIEnvironment` must be included in every HTML page that u
 ```
 
 > [!NOTE]
-> The `src` path is relative to the HTML file. For Android, assets are loaded from `app/src/main/assets/`; for iOS, from the `assets/` folder added to the Xcode target. The recommended path `libraries/wui-js/environment/web/wui-environment-0.1.js` matches the structure described in the installation steps.
+> The `src` path is relative to the HTML file. For Android, assets are loaded from `app/src/main/assets/`; for iOS, from the `assets/` folder added to the Xcode target. The recommended path `libraries/wui-js/environment/web/wui-environment-0.2.js` matches the structure described in the installation steps.
 
 **Bridge behavior by platform:**
 - **Android**: calls are **synchronous** — `Android.request()` returns the result immediately.
@@ -876,6 +899,7 @@ Static members of the `WUIEnvironment` class.
 const env = new WUIEnvironment();
 
 // Configure event handlers before loading the first page
+
 env.onReady = function(count) {
 	console.log("All", count, "requests resolved");
 };
@@ -887,6 +911,7 @@ env.onReceiveDeepLink = function(url) {
 };
 
 // Use onReady to wait for all initial requests to settle
+
 env.getDeviceInfo(function(info) {
 	console.log("Platform:", info.platform);
 });

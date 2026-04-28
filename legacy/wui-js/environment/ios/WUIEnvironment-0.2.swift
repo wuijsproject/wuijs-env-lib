@@ -1,7 +1,7 @@
 /*
  * @file WUIEnvironment.swift
  * @class WUIEnvironment
- * @version 0.3
+ * @version 0.2
  * @author Sergio E. Belmar V. (wuijs.project@gmail.com)
  * @copyright Sergio E. Belmar V. (wuijs.project@gmail.com)
  */
@@ -9,11 +9,11 @@
 import Foundation
 import WebKit
 import UIKit
-import Network
-import AVFoundation
-import UserNotifications
 import CoreLocation
+import AVFoundation
 import Contacts
+import UserNotifications
+import Network
 
 class WUIEnvironment: NSObject {
 
@@ -246,7 +246,7 @@ class WUIEnvironment: NSObject {
 
 	func isAppInForeground() -> Bool {
 		var result = false
-		let read = { result = UIApplication.shared.applicationState != .background }
+		let read = { result = UIApplication.shared.applicationState == .active }
 		Thread.isMainThread ? read() : DispatchQueue.main.sync { read() }
 		return result
 	}
@@ -1025,5 +1025,4 @@ extension WUIEnvironment: WKUIDelegate {
 		alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(alert.textFields?.first?.text) })
 		vc.present(alert, animated: true)
 	}
-
 }
