@@ -33,6 +33,7 @@
 		"demo/"
 	],
 	"scripts": {
+		"prepare": "test -d .git && exit 0 || (rm -f README.md && cp NPM.md README.md && cp -r src/wui-js/environment/. .)",
 		"prepack": "rm README.md && cp NPM.md README.md && cp -r src/wui-js/environment/. .",
 		"postpack": "rm -f README.md && ln -s docs/README-en.md README.md && ls src/wui-js/environment/ | grep -vE '^LICENSE$' | xargs rm -rf"
 	}

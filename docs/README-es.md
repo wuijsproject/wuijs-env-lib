@@ -291,7 +291,7 @@ Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acc
 Clonar el repositorio desde la cuenta oficial de wuiproject en GitHub:
 
 ```bash
-git clone https://github.com/wui-js/wuijs-environment-lib.git
+git clone --branch v0.5.0 https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -623,7 +623,7 @@ Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acc
 Clonar el repositorio desde GitHub si aún no se ha realizado:
 
 ```bash
-git clone https://github.com/wui-js/wuijs-environment-lib.git
+git clone --branch v0.5.0 https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
