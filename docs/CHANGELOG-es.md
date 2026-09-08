@@ -7,6 +7,12 @@
 
 # Registro de Cambios
 
+## [v0.5.1] - 2026-09-08
+
+Características:
+
+1. Se agregó el script `prepare` a `package.json` para que una instalación vía tag de git (`npm install github:wui-js/wuijs-environment-lib#vX.Y.Z`) produzca la misma estructura de archivos aplanada que una instalación desde el registro de npm.
+
 ## [v0.5.0] - 2026-07-20
 
 Características:

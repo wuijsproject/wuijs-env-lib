@@ -14,9 +14,9 @@
 |                       | |
 | --------------------- | ----------- |
 | **Nombre librería**   | `wuijs-environment-lib` |
-| **Versión librería**  | `0.5.0` ([Registro de Cambios](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-es.md)) |
+| **Versión librería**  | `0.5.1` ([Registro de Cambios](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-es.md)) |
 | **Paquete npm**       | `@wui-js/environment` ([npm](https://www.npmjs.com/package/@wui-js/environment)) |
-| **Versión documento** | `0.5.0.20260701.0` |
+| **Versión documento** | `0.5.1.20260908.0` |
 | **Licencia**          | `Licencia Apache 2.0` |
 | **Autor**             | `Sergio E. Belmar V. <wuijs.project@gmail.com>` |
 | **Repositorio**       | [https://github.com/wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib) |
@@ -291,7 +291,7 @@ Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acc
 Clonar el repositorio desde la cuenta oficial de wuiproject en GitHub:
 
 ```bash
-git clone --branch v0.5.0 https://github.com/wui-js/wuijs-environment-lib.git
+git clone --branch v0.5.1 https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -623,7 +623,7 @@ Los eventos son callbacks que el lado nativo envía al JavaScript cuando una acc
 Clonar el repositorio desde GitHub si aún no se ha realizado:
 
 ```bash
-git clone --branch v0.5.0 https://github.com/wui-js/wuijs-environment-lib.git
+git clone --branch v0.5.1 https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]

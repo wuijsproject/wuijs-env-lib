@@ -7,6 +7,12 @@
 
 # Change Log
 
+## [v0.5.1] - 2026-09-08
+
+Features:
+
+1. Added a `prepare` script to `package.json` so a git-tag install (`npm install github:wui-js/wuijs-environment-lib#vX.Y.Z`) produces the same flattened file layout as an npm-registry install.
+
 ## [v0.5.0] - 2026-07-20
 
 Features:

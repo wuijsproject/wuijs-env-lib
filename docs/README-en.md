@@ -14,9 +14,9 @@
 |                      | |
 | -------------------- | ----------- |
 | **Library name**     | `wuijs-environment-lib` |
-| **Library version**  | `0.5.0` ([Change Log](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-en.md)) |
+| **Library version**  | `0.5.1` ([Change Log](https://github.com/wui-js/wuijs-environment-lib/blob/main/docs/CHANGELOG-en.md)) |
 | **NPM package**      | `@wui-js/environment` ([npm](https://www.npmjs.com/package/@wui-js/environment)) |
-| **Document version** | `0.5.0.20260701.0` |
+| **Document version** | `0.5.1.20260908.0` |
 | **License**          | `Apache License 2.0` |
 | **Author**           | `Sergio E. Belmar V. <wuijs.project@gmail.com>` |
 | **Repository**       | [https://github.com/wui-js/wuijs-environment-lib](https://github.com/wui-js/wuijs-environment-lib) |
@@ -291,7 +291,7 @@ Events are callbacks that the native side sends to JavaScript when an asynchrono
 Clone the repository from the official wuiproject account on GitHub:
 
 ```bash
-git clone --branch v0.5.0 https://github.com/wui-js/wuijs-environment-lib.git
+git clone --branch v0.5.1 https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
@@ -623,7 +623,7 @@ Events are callbacks that the native side sends to JavaScript when an asynchrono
 Clone the repository from GitHub if it has not been cloned previously:
 
 ```bash
-git clone --branch v0.5.0 https://github.com/wui-js/wuijs-environment-lib.git
+git clone --branch v0.5.1 https://github.com/wui-js/wuijs-environment-lib.git
 ```
 
 > [!NOTE]
